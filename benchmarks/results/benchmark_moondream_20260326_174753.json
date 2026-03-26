@@ -1,0 +1,147 @@
+{
+  "model": "moondream",
+  "timestamp": "20260326_174753",
+  "results": [
+    {
+      "test_name": "real/photo_nature",
+      "category": "real_world",
+      "description": "REAL photo 4000x2047 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 751,
+        "completion_tokens": 131,
+        "total_tokens": 882,
+        "response": "\nIn the image, we can see a beautiful mountainous landscape, with a lake nestled within the heart of it. The scene is lit up by the light of day, emphasizing the natural grandeur and serenity of the setting. A small boat can be seen resting on the lake, possibly a sight for those who wish to explore the water. The scene is not only pleasing to the eyes but also provides an opportunity for outdoor enthusiasts to appreciate the scenic beauty surrounding them. The calm waters of the lake, contrasting with the lush green mountain range in the foreground, create a visually stunning tableau that showcases the remarkable natural features of the area.",
+        "latency_ms": 2717
+      },
+      "optimized": {
+        "prompt_tokens": 37,
+        "completion_tokens": 9,
+        "total_tokens": 46,
+        "response": "\n [No text detected in image]",
+        "latency_ms": 164,
+        "optimizations": [
+          "text_density=1.00 > 0.6 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 714,
+        "savings_pct": 95.1,
+        "latency_delta_ms": -2553
+      }
+    },
+    {
+      "test_name": "real/photo_street",
+      "category": "real_world",
+      "description": "REAL photo 3000x1988 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 751,
+        "completion_tokens": 167,
+        "total_tokens": 918,
+        "response": "\nIn the image, there is a cityscape featuring numerous tall buildings, indicating a densely populated urban area. The photograph is in black and white, which makes the city appear more dramatic and timeless. A high-angle view showcases the impressive height of the buildings, emphasizing the vastness and grandeur of the city. This vantage point also provides a unique perspective of the structures, allowing a better understanding of the scale and layout of the urban environment.\n\nThe photo captures the essence of the city by focusing on its architecture and the expansive nature of the buildings. The city's high-rise buildings extend into the distance, highlighting the height and dominance of the urban landscape. The black and white composition adds a sense of depth and history, emphasizing the city's past and providing a vivid, timeless representation of this particular cityscape.",
+        "latency_ms": 1564
+      },
+      "optimized": {
+        "prompt_tokens": 37,
+        "completion_tokens": 47,
+        "total_tokens": 84,
+        "response": "\nThree men are standing in the street. One man on the left has his arms crossed, while another man is holding a bag. Another man is wearing a hat. The surroundings include another person and a building in the background.",
+        "latency_ms": 280,
+        "optimizations": [
+          "text_density=1.00 > 0.6 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 714,
+        "savings_pct": 95.1,
+        "latency_delta_ms": -1284
+      }
+    },
+    {
+      "test_name": "real/receipt_real",
+      "category": "real_world",
+      "description": "REAL receipt 2448x3264 \u2014 should OCR route (text-heavy)",
+      "direct": {
+        "prompt_tokens": 752,
+        "completion_tokens": 78,
+        "total_tokens": 830,
+        "response": "\nThe image depicts a receipt from a restaurant, displayed on a nearby wooden surface. The receipt shows details of the food and drinks ordered, including a lunch bill and the cost of the items purchased. The receipt is placed on an envelope, which can also be seen on the table. This type of receipt is commonly seen in restaurants for customers to keep track of their purchases and expenses.",
+        "latency_ms": 1071
+      },
+      "optimized": {
+        "prompt_tokens": 752,
+        "completion_tokens": 77,
+        "total_tokens": 829,
+        "response": "\nThe image features an itemized receipt, likely for a night out at a hotel with guests. The receipt lists the total cost of the night, including a price for the food and drinks ordered. It also has the bill amount split into various items like tax and tip. In the receipt, you can also find several partial transactions, representing what customers have ordered from the hotel.",
+        "latency_ms": 1005,
+        "optimizations": [
+          "resize 2448x3264 \u2192 1536x2048"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -66
+      }
+    },
+    {
+      "test_name": "real/document_invoice",
+      "category": "real_world",
+      "description": "REAL invoice 850x1100 \u2014 should OCR route (typed text)",
+      "direct": {
+        "prompt_tokens": 753,
+        "completion_tokens": 89,
+        "total_tokens": 842,
+        "response": "\nIn the image, there is a white and gray invoice form on a desk with a total of nine items to record. The items to be noted include a service price of $28.00 and a total of five invoices to process. Additionally, there is a partial breakdown of the total expenses, stating that the services include a total cost of $1,800 and a total of three payments of $1,800 each.",
+        "latency_ms": 1062
+      },
+      "optimized": {
+        "prompt_tokens": 753,
+        "completion_tokens": 115,
+        "total_tokens": 868,
+        "response": "\nThe white invoicing software on the spreadsheet is designed to help organize and create professional invoices. This software ensures that the invoice details and calculations are accurately organized in an easy-to-read format with various customizable fields. In the image, there is a spreadsheet containing multiple tables of numbers that need to be added to the invoicing software. It serves as a convenient one-stop solution for invoicing and record-keeping purposes. The invoicing software is user-friendly, making it accessible for even those who are new to the process.",
+        "latency_ms": 1181,
+        "optimizations": [
+          "convert png \u2192 jpeg q=85"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": 119
+      }
+    },
+    {
+      "test_name": "real/screenshot_real",
+      "category": "real_world",
+      "description": "REAL screenshot 2066x766 \u2014 should resize + detect text content",
+      "direct": {
+        "prompt_tokens": 752,
+        "completion_tokens": 112,
+        "total_tokens": 864,
+        "response": "\nThe image shows a computer screen displaying a user interface that is set against a dark brown background. The focus of the image is on the \"Steps\" section, likely providing instructions for troubleshooting a computer issue. Next to it, there is a progress bar that spans a considerable number of sections, indicating how much work still needs to be done.\n\nThe computer screen is divided into smaller sections, possibly with multiple tabs running simultaneously. The screen is relatively large, stretching across the entire width of the image and occupying most of the background space.",
+        "latency_ms": 1204
+      },
+      "optimized": {
+        "prompt_tokens": 227,
+        "completion_tokens": 200,
+        "total_tokens": 427,
+        "response": "\n 'p ID \n Status\n Name\n Log files L\n Creating job ... running job ids 1, 2, 3 ,4, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 9, 10, 11, 15, 20, 25, 31, 42, 52, 66, 78, 87, 100, 120, 140, 150, 200, 250, 300, 400, 500, 600, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700",
+        "latency_ms": 1116,
+        "optimizations": [
+          "text_density=0.93 > 0.6 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 525,
+        "savings_pct": 69.8,
+        "latency_delta_ms": -88
+      }
+    }
+  ],
+  "totals": {
+    "total_direct": 3759,
+    "total_optimized": 1806,
+    "total_saved": 1953,
+    "overall_savings_pct": 52.0
+  }
+}

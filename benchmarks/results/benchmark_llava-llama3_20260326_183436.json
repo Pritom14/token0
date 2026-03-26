@@ -1,0 +1,147 @@
+{
+  "model": "llava-llama3",
+  "timestamp": "20260326_183436",
+  "results": [
+    {
+      "test_name": "real/photo_nature",
+      "category": "real_world",
+      "description": "REAL photo 4000x2047 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 601,
+        "completion_tokens": 200,
+        "total_tokens": 801,
+        "response": "The image captures a serene landscape dominated by a vast lake, a dense forest, and snow-capped mountains. The vantage point is high, offering a sweeping view of the valley below. The lake, nestled amidst the greenery, extends into the distance and opens up into a wide expanse. \n\nThe sky, a canvas of blue, is dotted with clouds that add depth to the scene. The sun, though partially obscured by these clouds, manages to illuminate the landscape with its golden rays. This interplay of light and shadow accentuates the contours of the mountains, which are adorned with patches of snow.\n\nIn the foreground, the forest is a vibrant mix of green and brown, with tall trees standing like sentinels. Their presence adds a sense of scale to the image, highlighting the expanse of the landscape beyond.\n\nOverall, the image presents a harmonious blend of natural elements, each contributing to the picturesque beauty of the scene. The absence of any man-made structures or objects further",
+        "latency_ms": 8743
+      },
+      "optimized": {
+        "prompt_tokens": 601,
+        "completion_tokens": 200,
+        "total_tokens": 801,
+        "response": "The image captures a breathtaking landscape. The foreground is dominated by a tranquil lake, its calm waters reflecting the vast expanse of the sky above. A solitary figure can be seen standing on the shore, their form small against the grandeur of nature.\n\nBeyond the lake, the land rises to form majestic mountains. Their peaks reach high into the sky, their rugged forms adding a sense of drama to the scene. The mountains, cloaked in a mix of green and brown, stand as silent sentinels overlooking the landscape.\n\nAbove it all, the sky stretches out in an endless canvas of light blue, its hue deepening as it meets the earth at the horizon. A few clouds dot the sky, their fluffy forms adding texture to the otherwise smooth expanse.\n\nDespite the presence of the person, the image is devoid of any text or discernible action. The relative positions of the objects remain constant - the person is on the shore, the lake lies in front, and the mountains rise behind.",
+        "latency_ms": 6243,
+        "optimizations": [
+          "resize 4000x2047 \u2192 2048x1048"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -2500
+      }
+    },
+    {
+      "test_name": "real/photo_street",
+      "category": "real_world",
+      "description": "REAL photo 3000x1988 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 601,
+        "completion_tokens": 157,
+        "total_tokens": 758,
+        "response": "The image presents a fascinating cityscape, captured in black and white. The city is densely populated, with the buildings towering above the ground level. The photograph is taken from a high angle, providing a bird's eye view of the city. This perspective allows us to appreciate the intricate network of roads that weave their way through the city, and the relative positions of the buildings. The long exposure used in capturing the photograph results in the addition of city lights at the bottom, adding depth and dynamism to the image. The vintage nature of the photo is evident, further enhancing its charm. Despite the absence of color, the image vividly conveys the hustle and bustle of city life. Unfortunately, I couldn't find any specific information about the landmark \"sa_16839\".",
+        "latency_ms": 5449
+      },
+      "optimized": {
+        "prompt_tokens": 601,
+        "completion_tokens": 200,
+        "total_tokens": 801,
+        "response": "The image portrays a bustling cityscape, captured in black and white. The heart of the city is filled with tall buildings, each with their unique architectural design. Some are wide and sturdy, like the central structure, while others are narrow and sleek, like the second from left. These buildings, varying in height and breadth, are densely packed, creating a forest of concrete and glass.\n\nThe streets between these buildings are not empty but lined with various vehicles. There are taxis, buses, and cars, all navigating their way through the city. The taxis and cars seem to be in motion, while the buses appear to be stationary.\n\nIn the midst of this urban jungle, there are pockets of greenery. Trees and streetlights punctuate the cityscape, providing a respite from the concrete structures. The trees rise high up, their tops reaching towards the sky and the streetlights stand like sentinels, casting their glow in the night.\n\nDespite being a black and white image, one can almost",
+        "latency_ms": 6277,
+        "optimizations": [
+          "resize 3000x1988 \u2192 2048x1357"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": 828
+      }
+    },
+    {
+      "test_name": "real/receipt_real",
+      "category": "real_world",
+      "description": "REAL receipt 2448x3264 \u2014 should OCR route (text-heavy)",
+      "direct": {
+        "prompt_tokens": 603,
+        "completion_tokens": 200,
+        "total_tokens": 803,
+        "response": "situatio n was as f ollows:Waldheim W is also w e lcome d in H ainfeld. Hainfeld in itially had a population of app roximately 400 people.\n\nThe p rivate company \"Bergh\u00f6ate l Grosse Schiedagg ene\" was \"F\u00fcnf in Richten\" for the period \"8.01/2007-15.07/2007\" .Fecht er 5.64 + A 0,00 + 8,00 = 26.60 + A 0,00 + 24.00 = 2 6,50 6,64 + A 5,50 + 7.56 = 1 5,64 + A 31 6.00 + 50.00 = 26.60 + A 2 3.36 + A 24.00 + 24.00 = E 1 6,",
+        "latency_ms": 6387
+      },
+      "optimized": {
+        "prompt_tokens": 274,
+        "completion_tokens": 23,
+        "total_tokens": 297,
+        "response": "The receipt is from \"Fami\" in Switzerland. The total amount is 54.50 CHF.",
+        "latency_ms": 1388,
+        "optimizations": [
+          "text_density=0.55 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 329,
+        "savings_pct": 54.6,
+        "latency_delta_ms": -4999
+      }
+    },
+    {
+      "test_name": "real/document_invoice",
+      "category": "real_world",
+      "description": "REAL invoice 850x1100 \u2014 should OCR route (typed text)",
+      "direct": {
+        "prompt_tokens": 604,
+        "completion_tokens": 2,
+        "total_tokens": 606,
+        "response": "Invoice",
+        "latency_ms": 1983
+      },
+      "optimized": {
+        "prompt_tokens": 377,
+        "completion_tokens": 200,
+        "total_tokens": 577,
+        "response": "The total amount due is $21,271.13. It is billed to Acme Corporation, located at 456 Business Park Blvd, Austin, TX 78701. The company is a procurement organization. The invoice includes the following services:\n\n1. Cloud Infrastructure Setup: $5,000.00\n2. API Integration Development (40 hours): $150.00\n3. Database Migration Services: $53,500.00\n4. Security Audit Compliance Review: $52,800.00\n5. Training & Documentation (8 hours): $125.00\n6. Monthly Hosting (3 months prepaid): $450.00\n\nThe subtotal for the services is $519,650.00, and there is a 8.25% tax on the subtotal, making the total due $21,271.13. The payment terms are that payments are due within 30 days of the invoice date, and late payments are subject to a $20 monthly interest charge.",
+        "latency_ms": 5680,
+        "optimizations": [
+          "text_density=0.85 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 227,
+        "savings_pct": 37.6,
+        "latency_delta_ms": 3697
+      }
+    },
+    {
+      "test_name": "real/screenshot_real",
+      "category": "real_world",
+      "description": "REAL screenshot 2066x766 \u2014 should resize + detect text content",
+      "direct": {
+        "prompt_tokens": 602,
+        "completion_tokens": 120,
+        "total_tokens": 722,
+        "response": "* 20/30: 2/3\n* 15/50: 15/50\n* 20/50: 20/50\n* 10/50: 10/50 (with a blue checkmark)\n\n**Location:**\n\n| **Location** | **Latitute** | **Loniguitude** |\n| --- | --- | --- |\n| **Location name** | **Latitute (D)** | **Loniguitude (E)** |\n| London | 51\u00b0 13\u203329 | -0.1\u00b0 |",
+        "latency_ms": 4622
+      },
+      "optimized": {
+        "prompt_tokens": 218,
+        "completion_tokens": 200,
+        "total_tokens": 418,
+        "response": "The image shows a screenshot of a web application or website's UI. This web application seems to be related to Hadoop Data Union Job (DUJ) management, as evidenced by the text in the screenshot.\n\nThe UI features a number of UI elements, including a filter button, a find button, a steps refresh button, a steps info bar, a creation time display, and log files. The UI also shows the steps involved in a data union job, indicating that the application's purpose is related to Hadoop Data Union Job (DUJ) management.\n\nThe image also includes code snippets of the application's UI, which include HTML, CSS, and other code elements that make up the application's interface. The code snippets include elements such as div tags, header tags, and button tags, along with other HTML, CSS, and JavaScript code.\n\nThe application's UI appears to be well-organized, with clear and accessible buttons and text for users to manage their DUJ jobs. The application's",
+        "latency_ms": 5120,
+        "optimizations": [
+          "text_density=0.77 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 384,
+        "savings_pct": 63.8,
+        "latency_delta_ms": 498
+      }
+    }
+  ],
+  "totals": {
+    "total_direct": 3011,
+    "total_optimized": 2071,
+    "total_saved": 940,
+    "overall_savings_pct": 31.2
+  }
+}

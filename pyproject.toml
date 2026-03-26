@@ -1,0 +1,56 @@
+[project]
+name = "token0"
+version = "0.1.0"
+description = "Open-source API proxy that makes vision LLM calls 5-10x cheaper"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "aiosqlite>=0.20.0",
+    "alembic>=1.14.0",
+    "pillow>=11.0.0",
+    "opencv-python-headless>=4.10.0",
+    "easyocr>=1.7.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "python-multipart>=0.0.12",
+    "anthropic>=0.40.0",
+    "openai>=1.50.0",
+    "google-genai>=1.0.0",
+]
+
+[project.optional-dependencies]
+full = [
+    "asyncpg>=0.30.0",
+    "redis>=5.0.0",
+    "boto3>=1.35.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

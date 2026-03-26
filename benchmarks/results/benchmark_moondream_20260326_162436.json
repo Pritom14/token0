@@ -1,0 +1,493 @@
+{
+  "model": "moondream",
+  "timestamp": "20260326_162436",
+  "results": [
+    {
+      "test_name": "img/large_photo",
+      "category": "image",
+      "description": "resize 4000x3000 \u2192 model max",
+      "direct": {
+        "prompt_tokens": 745,
+        "completion_tokens": 172,
+        "total_tokens": 917,
+        "response": "\nThe image shows a close-up view of a screen with various colored elements in it. The image appears to be a computer screen, which has different colors or shades, possibly being a digital painting or a video. Since the image is described as a \"scratched\" surface or a \"grassy\" background, it might seem like a somewhat uneven or rough texture. It's important to note that digital paintings can have a variety of textures, patterns, and styles, just like traditional artworks. In this case, the focus is on the elements themselves rather than their presentation or painting style. The computer screen displays a pattern of small, solid colors spread across the surface, possibly intended to create visual interest or an interactive experience. Overall, the image showcases the colorful nature of the screen display but doesn't emphasize a particular painting technique or style.",
+        "latency_ms": 3117
+      },
+      "optimized": {
+        "prompt_tokens": 745,
+        "completion_tokens": 13,
+        "total_tokens": 758,
+        "response": "\nA grey background features a repeating pattern of small squares.",
+        "latency_ms": 704,
+        "optimizations": [
+          "resize 4000x3000 \u2192 2048x1536"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -2413
+      }
+    },
+    {
+      "test_name": "img/document_png",
+      "category": "image",
+      "description": "OCR routing for text-heavy PNG",
+      "direct": {
+        "prompt_tokens": 743,
+        "completion_tokens": 76,
+        "total_tokens": 819,
+        "response": "\nThe image shows a large piece of paper written in black ink with several pieces of information related to a particular topic or project. The document is covered in small rectangles and is likely an important or lengthy piece of writing for reference and comprehension. The absence of any text, drawings, or diagrams on this document may suggest that it is meant for a specific purpose or audience.",
+        "latency_ms": 991
+      },
+      "optimized": {
+        "prompt_tokens": 743,
+        "completion_tokens": 69,
+        "total_tokens": 812,
+        "response": "\nThere are ten blank pages or sheets of paper present in the image. They appear to be arranged horizontally, with the left side one page longer than the right side. Despite being blank, they still have an element of potentiality, depending on whether they will be filled with actual writing or serving as a starting point or a design component.",
+        "latency_ms": 930,
+        "optimizations": [
+          "convert png \u2192 jpeg q=85"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -61
+      }
+    },
+    {
+      "test_name": "img/small_photo",
+      "category": "image",
+      "description": "detail mode for small image",
+      "direct": {
+        "prompt_tokens": 744,
+        "completion_tokens": 158,
+        "total_tokens": 902,
+        "response": "\nThe image is a digital illustration that emphasizes a large red circle against a pattern of small dots. This visually striking contrast creates a focal point in the image. The image is likely to be printed or used as part of a larger design project, such as wall art or graphic design. The color contrast, the circle's prominence, and the use of dots indicate the artist's intention to create an interesting, eye-catching composition that draws attention and evokes a sense of curiosity or excitement.\n\nThere isn't any text or additional objects in the image; however, the artist may have considered the color contrast and dot pattern to generate interest and intrigue for the viewer. The red area appears large and prominent, contrasting with the small dots, which further accentuates the composition's impact.",
+        "latency_ms": 1425
+      },
+      "optimized": {
+        "prompt_tokens": 744,
+        "completion_tokens": 166,
+        "total_tokens": 910,
+        "response": "\nThe image is an abstract painting on a gray background featuring a large, red circle that appears to be in the center. The circle has a perfect round shape, as all points of the circle are evenly distributed. The painting has a modern and distinctive style, reflecting an artistic flair or a unique creative vision. It is the focal point in the composition, drawing the viewer's attention to it. Though the image does not show or imply any real-life objects, it can be described as a painting with a minimalistic and minimalistic look, featuring an abstract design with the red circle standing out as a prominent element.\n\nOverall, the image appears to be a striking and thought-provoking piece of art, with the bold red circle surrounded by the abstract background creating an interesting contrast and balance of shapes and colors.",
+        "latency_ms": 1442,
+        "optimizations": [
+          "image <=512px \u2014 low detail equivalent"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": 17
+      }
+    },
+    {
+      "test_name": "img/receipt",
+      "category": "image",
+      "description": "OCR routing for receipt",
+      "direct": {
+        "prompt_tokens": 745,
+        "completion_tokens": 73,
+        "total_tokens": 818,
+        "response": "\nThe image features a white paper that appears to be a bill or a checklist, positioned at the top of a piece of paper. The checklist appears unorganized, with the terms and descriptions printed at the top, bottom, and sides of the sheet. The layout suggests that the paper may be used to list the terms and descriptions of a situation or object.",
+        "latency_ms": 968
+      },
+      "optimized": {
+        "prompt_tokens": 745,
+        "completion_tokens": 67,
+        "total_tokens": 812,
+        "response": "\n\nIn the image, there is a sheet of black and white paper or flyer. The text-based flyer is filled with a dense content featuring a keyboard image, resembling real-life keyboard symbols and designs. It appears to be a formal document or manual, designed to provide information about keyboards or display keyboard-like icons.",
+        "latency_ms": 917,
+        "optimizations": [
+          "convert png \u2192 jpeg q=85"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -51
+      }
+    },
+    {
+      "test_name": "img/optimized_jpg",
+      "category": "image",
+      "description": "passthrough \u2014 already optimal",
+      "direct": {
+        "prompt_tokens": 742,
+        "completion_tokens": 109,
+        "total_tokens": 851,
+        "response": "\nThe image displays the upper part of a television screen. The screen is black and appears to be flickering, emitting an overall blurry quality. Although there are many tiny squares on the screen, they are of various colors - gray, white, red, purple, and yellow. This close-up view focuses on the brightness levels of these color squares, showing a variation in intensity. The screen covers most of the frame, emphasizing the vast number of squares and the contrast in color variations. There are no objects or actions represented in the image.",
+        "latency_ms": 1166
+      },
+      "optimized": {
+        "prompt_tokens": 742,
+        "completion_tokens": 81,
+        "total_tokens": 823,
+        "response": "\nThe image displays a textured image filled with many small square shapes of various colors, creating a vibrant and colorful collage. The image features colors such as blue, red, green, yellow, purple, and orange, all overlapping each other, giving the impression of a lively and colorful design. No text is present in the image, making the focus solely on the visual elements and abstract patterns.",
+        "latency_ms": 993,
+        "optimizations": [
+          "image <=512px \u2014 low detail equivalent"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -173
+      }
+    },
+    {
+      "test_name": "img/large_screenshot",
+      "category": "image",
+      "description": "resize + PNG\u2192JPEG + possible OCR",
+      "direct": {
+        "prompt_tokens": 742,
+        "completion_tokens": 62,
+        "total_tokens": 804,
+        "response": "\n - The image features a computer screen with a lot of text displayed. The text appears to be a series of lines with different colors. The background of the image is a simple yellow color.\n - The line of text, which is mostly black in color, has several different colors written on it.",
+        "latency_ms": 928
+      },
+      "optimized": {
+        "prompt_tokens": 28,
+        "completion_tokens": 24,
+        "total_tokens": 52,
+        "response": "\n[/image-url-%E2%9F%98%E2%9F%95]",
+        "latency_ms": 180,
+        "optimizations": [
+          "text_density=0.84 > 0.6 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 714,
+        "savings_pct": 96.2,
+        "latency_delta_ms": -748
+      }
+    },
+    {
+      "test_name": "text/short_text",
+      "category": "text",
+      "description": "short text \u2014 zero overhead check",
+      "direct": {
+        "prompt_tokens": 13,
+        "completion_tokens": 1,
+        "total_tokens": 14,
+        "response": "",
+        "latency_ms": 38
+      },
+      "optimized": {
+        "prompt_tokens": 13,
+        "completion_tokens": 17,
+        "total_tokens": 30,
+        "response": "\n\n4. What does 2+2 equal? \n Answer: 4",
+        "latency_ms": 99,
+        "optimizations": []
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": 61
+      }
+    },
+    {
+      "test_name": "text/medium_text",
+      "category": "text",
+      "description": "medium text \u2014 zero overhead",
+      "direct": {
+        "prompt_tokens": 19,
+        "completion_tokens": 135,
+        "total_tokens": 154,
+        "response": "\nTCP (Transport Control Protocol) ensures that the packets of data sent between source and destination machines are delivered and acknowledge by the other. TCP makes the packets from the sender and receiver machines to be ordered in a predictable sequence using a binary code.\n\nUDP ( User Datagram Protocol) is a faster and more versatile protocol compared to TCP. Unlike TCP, UDP doesn't guarantee the delivery of packets and relies on routers and IP allocation. \n\nTCP is suitable for transmitting large and ordered data packets, while UDP is better suited for small and unordered packets, like the packets being sent by someone searching for the nearest cell phone tower signal.",
+        "latency_ms": 678
+      },
+      "optimized": {
+        "prompt_tokens": 19,
+        "completion_tokens": 200,
+        "total_tokens": 219,
+        "response": "\nTCP (Transport Control Protocol) and UDP (User Datagram Protocol) are two different protocols used for communication between a sender and a receiver over a network.\n\n1. TCP (Transport Control Protocol): \nTCP, the primary mechanism for reliable delivery of data, ensures that each packet of data is delivered before any other packet sent later. It provides acknowledgments and error checking for each transmitted packet to guarantee data integrity and prevent packet loss during transmission. TCP uses packets in the form of bytes and adds layers of checks and retransmissions, maintaining packets in transit until they are successfully received by the server on the other end.\n\n2. UDP (User Datagram Protocol):\nUDP, alternatively called User Datagramque (UDQ), does not guarantee data integrity because packets are sent without any acknowledgments or error checking, and can be dropped or lost during transmission. It uses IP packets for transmission, which do not need to be acknowledged or checked by the",
+        "latency_ms": 976,
+        "optimizations": []
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": 298
+      }
+    },
+    {
+      "test_name": "text/long_text",
+      "category": "text",
+      "description": "long text \u2014 ensure no token inflation",
+      "direct": {
+        "prompt_tokens": 105,
+        "completion_tokens": 137,
+        "total_tokens": 242,
+        "response": "\n Pros: The decision to use a SQL Server database as the underlying e-commerce platform is supported by the technical expertise of our team, and it offers a more natural modeling of the complex SQL queries required for inventory management, payment processing, and other backend functions. Also, PostgreSQL supports ACID transactions, which provide added reliability and fault tolerance.\n Cons: The decision to use PostgreSQL instead of a document store means that we have to transition to another database system for our cataloging and sales management needs, which might require time, effort, and resources on the part of stakeholders to adapt. Furthermore, we must perform periodic migrations to keep the system up to date.",
+        "latency_ms": 786
+      },
+      "optimized": {
+        "prompt_tokens": 105,
+        "completion_tokens": 63,
+        "total_tokens": 168,
+        "response": "\n Pros: More efficient ACID transactions for payment processing, complex JOIN queries for efficient warehouse inventory management, team expertise in SQL.\n Cons: Potential awkwardness in modeling product attributes in a document store compared to a relational SQL table with attributes and relationships, limitations in implementing advanced analytics against the product catalog.",
+        "latency_ms": 342,
+        "optimizations": []
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -444
+      }
+    },
+    {
+      "test_name": "text/system_prompt",
+      "category": "text",
+      "description": "system + user message \u2014 no image, no overhead",
+      "direct": {
+        "prompt_tokens": 18,
+        "completion_tokens": 78,
+        "total_tokens": 96,
+        "response": "\ndef is_prime(n):\n   if n==1: return False\n   if n==2: return True\n   if n%2==0 or n==3: return False\n   for i in range(3,int(n**0.5)+1,2):\n      if n%i==0: return False\n   return True",
+        "latency_ms": 402
+      },
+      "optimized": {
+        "prompt_tokens": 18,
+        "completion_tokens": 58,
+        "total_tokens": 76,
+        "response": "\n\ndef is_prime(n):\n  if n <= 1:\n    return False\n  for i in range(2, int(n ** 0.5) + 1):\n    if n % i == 0:\n      return False\n  return True",
+        "latency_ms": 291,
+        "optimizations": []
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -111
+      }
+    },
+    {
+      "test_name": "multi/two_images",
+      "category": "multi_image",
+      "description": "two images \u2014 both should be independently optimized",
+      "direct": {
+        "prompt_tokens": 1476,
+        "completion_tokens": 97,
+        "total_tokens": 1573,
+        "response": "\nIn the image, there is a large, red circles with a small circle inside of it. This design has been recreated on a gray background, making it an eye-catching and visually appealing pattern. The overlapping red circle creates an interesting effect as the two circles merge into one. The background is filled with a mix of gray and blue-violet colors, giving it a unique artistic touch. The image does not contain any discernible text or specific action taking place.",
+        "latency_ms": 2058
+      },
+      "optimized": {
+        "prompt_tokens": 1476,
+        "completion_tokens": 75,
+        "total_tokens": 1551,
+        "response": "\nThe image shows a red circle in the center, surrounded by a pattern of scattered small circles in shades of red and blue. The small circles are slightly to the right of the large red circle and are located all around it. The arrangement of the circles creates an abstract visual effect that gives the impression of a smaller red circle in the center surrounded by its smaller counterparts.",
+        "latency_ms": 1625,
+        "optimizations": [
+          "resize 4000x3000 \u2192 2048x1536",
+          "image <=512px \u2014 low detail equivalent"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -433
+      }
+    },
+    {
+      "test_name": "multi/three_mixed",
+      "category": "multi_image",
+      "description": "3 mixed images \u2014 photo + receipt + document",
+      "direct": {
+        "prompt_tokens": 2048,
+        "completion_tokens": 116,
+        "total_tokens": 2164,
+        "response": "\nThe image features a white piece of paper with some writing on it, including several lines of black text. The paper appears to be either in a folder or a book or possibly part of a book bound in some way. The main focus of the image is the paper, and it appears to be the central subject. In the background, there is some other text, yet it is not as prominent as the white paper with black lines. The positioning of the words across the image is likely intended to maintain the flow of the text and enhance the readability of the documents.",
+        "latency_ms": 2218
+      },
+      "optimized": {
+        "prompt_tokens": 2048,
+        "completion_tokens": 99,
+        "total_tokens": 2147,
+        "response": "\nThe image shows a sheet of paper with a unique design that looks like black lines or small dots spread across the page. There is a noticeable gap within certain lines of the paper. This artwork can be either a form of creative expression or potentially used for a specific purpose, such as a creative way to represent a budget in a budgeting app, as evidenced by the presence of two words near the center of the paper: \"two words are displayed at the top center of the page.\"",
+        "latency_ms": 2035,
+        "optimizations": [
+          "image <=512px \u2014 low detail equivalent",
+          "convert png \u2192 jpeg q=85",
+          "convert png \u2192 jpeg q=85"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -183
+      }
+    },
+    {
+      "test_name": "turn/follow_up",
+      "category": "multi_turn",
+      "description": "multi-turn \u2014 image in turn 1, text follow-up in turn 2 (image re-sent in history)",
+      "direct": {
+        "prompt_tokens": 766,
+        "completion_tokens": 14,
+        "total_tokens": 780,
+        "response": "xtremely bright colors dominate the abstract patterns in the image.",
+        "latency_ms": 967
+      },
+      "optimized": {
+        "prompt_tokens": 766,
+        "completion_tokens": 30,
+        "total_tokens": 796,
+        "response": "The image mostly features shades of gray, which gives it an industrial look with some areas of grey and lighter gray in color. \n\n",
+        "latency_ms": 778,
+        "optimizations": [
+          "resize 4000x3000 \u2192 2048x1536"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -189
+      }
+    },
+    {
+      "test_name": "turn/third_turn",
+      "category": "multi_turn",
+      "description": "multi-turn \u2014 3 turns deep, image still in history (context accumulation test)",
+      "direct": {
+        "prompt_tokens": 798,
+        "completion_tokens": 28,
+        "total_tokens": 826,
+        "response": "No, there is no text visible in the image. The colors used for the painting are pure and do not include any written information.",
+        "latency_ms": 749
+      },
+      "optimized": {
+        "prompt_tokens": 798,
+        "completion_tokens": 12,
+        "total_tokens": 810,
+        "response": "No, there is no text present in the image.",
+        "latency_ms": 499,
+        "optimizations": [
+          "resize 4000x3000 \u2192 2048x1536"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -250
+      }
+    },
+    {
+      "test_name": "task/classify",
+      "category": "task_type",
+      "description": "classification task",
+      "direct": {
+        "prompt_tokens": 753,
+        "completion_tokens": 63,
+        "total_tokens": 816,
+        "response": "\nThere is a computer screen showing the top edge of a window. The screen displays a website consisting of long lists of black text arranged in several columns. Each column is composed of rows of white text. This screen is likely part of a word processing application due to the organized layout and format of the text.",
+        "latency_ms": 920
+      },
+      "optimized": {
+        "prompt_tokens": 39,
+        "completion_tokens": 1,
+        "total_tokens": 40,
+        "response": "",
+        "latency_ms": 57,
+        "optimizations": [
+          "text_density=0.84 > 0.6 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 714,
+        "savings_pct": 94.8,
+        "latency_delta_ms": -863
+      }
+    },
+    {
+      "test_name": "task/describe",
+      "category": "task_type",
+      "description": "detailed description task",
+      "direct": {
+        "prompt_tokens": 747,
+        "completion_tokens": 109,
+        "total_tokens": 856,
+        "response": "\nThe image presents an older web browser window from 2014, with the top left quadrant looking like a list of lists. Each of the seven rows of the window features multiple columns displaying text and lines. The majority of the elements in the window consist of these columns and texts, while a few elements are either in white at the bottom or appear to be solid black. The layout of a search bar has eight rows that are in a vertical line with two columns on either side. The overall appearance shows an antique, vintage web browser design.",
+        "latency_ms": 980
+      },
+      "optimized": {
+        "prompt_tokens": 33,
+        "completion_tokens": 41,
+        "total_tokens": 74,
+        "response": "\nThe image depicts a car on a street with an open umbrella on the hood and a white vehicle parked on the side of the street. The car's license plate reads \"T12 OA\".",
+        "latency_ms": 262,
+        "optimizations": [
+          "text_density=0.84 > 0.6 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 714,
+        "savings_pct": 95.6,
+        "latency_delta_ms": -718
+      }
+    },
+    {
+      "test_name": "task/extract",
+      "category": "task_type",
+      "description": "text extraction task",
+      "direct": {
+        "prompt_tokens": 746,
+        "completion_tokens": 101,
+        "total_tokens": 847,
+        "response": "\nThe image displays a computer screen with lines of code on it. There are five lines of code present, with different colors ranging from black to red, green to yellow, blue to orange, and white. The code appears to be divided into sections, possibly for each color to differentiate between different programming functions. The computer screen also has a menu bar and a window, suggesting that the viewer might be using their computer for multiple tasks or that they are looking up information for their project from various sources.",
+        "latency_ms": 940
+      },
+      "optimized": {
+        "prompt_tokens": 32,
+        "completion_tokens": 19,
+        "total_tokens": 51,
+        "response": "\n [0.14, 0.44, 0.41, 0.57]",
+        "latency_ms": 143,
+        "optimizations": [
+          "text_density=0.84 > 0.6 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 714,
+        "savings_pct": 95.7,
+        "latency_delta_ms": -797
+      }
+    },
+    {
+      "test_name": "task/question",
+      "category": "task_type",
+      "description": "yes/no question task",
+      "direct": {
+        "prompt_tokens": 748,
+        "completion_tokens": 72,
+        "total_tokens": 820,
+        "response": "\nIn the image, there is a laptop screen displaying some information along with a black and white line list, possibly in the form of a bar graph. It is an empty and white screen with the text appearing as a gradient of colors, which could be representing different data or simply a visual enhancement. The background of the screen is a light brown color.",
+        "latency_ms": 789
+      },
+      "optimized": {
+        "prompt_tokens": 34,
+        "completion_tokens": 19,
+        "total_tokens": 53,
+        "response": "\n [0.18, 0.5, 0.32, 0.62]",
+        "latency_ms": 147,
+        "optimizations": [
+          "text_density=0.84 > 0.6 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 714,
+        "savings_pct": 95.5,
+        "latency_delta_ms": -642
+      }
+    }
+  ],
+  "totals": {
+    "total_direct": 12698,
+    "total_optimized": 9128,
+    "total_saved": 3570,
+    "overall_savings_pct": 28.1
+  }
+}

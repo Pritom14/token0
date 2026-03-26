@@ -1,0 +1,147 @@
+{
+  "model": "moondream",
+  "timestamp": "20260326_183914",
+  "results": [
+    {
+      "test_name": "real/photo_nature",
+      "category": "real_world",
+      "description": "REAL photo 4000x2047 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 751,
+        "completion_tokens": 126,
+        "total_tokens": 877,
+        "response": "\nThe serene scene depicts a valley nestled at the foot of a mountain range, forming a beautiful mountain scenery. The valley is surrounded by a lush, green environment with evergreen trees and tall grass, creating a peaceful atmosphere. The body of water in the valley is surrounded by mountains, further enhancing the picturesque landscape. A boat is floating on the water near the middle of the valley. The clear sky provides a perfect backdrop for the landscape, highlighting the natural beauty of the scene. This panorama showcases the valley in relation to the tall mountains and trees and offers a peaceful location that can be perfect for relaxation.",
+        "latency_ms": 3208
+      },
+      "optimized": {
+        "prompt_tokens": 751,
+        "completion_tokens": 135,
+        "total_tokens": 886,
+        "response": "\nIn this scene, there are gray clouds covering the sun as it is shining outside. The mountains and forest in the background create a serene atmosphere. Below the mountains, there is a large lake surrounded by green grass. On the lake, there is a single boat moving towards the land through the middle of the water. The boats appear to be the main focus of the image, as they travel through this beautiful landscape. In addition to the boat, there are several other boats scattered across the large body of water, further adding to the sense of movement. The presence of trees and mountains make for a picturesque scene, inviting viewers to appreciate nature's grandeur.",
+        "latency_ms": 1323,
+        "optimizations": [
+          "resize 4000x2047 \u2192 2048x1048"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -1885
+      }
+    },
+    {
+      "test_name": "real/photo_street",
+      "category": "real_world",
+      "description": "REAL photo 3000x1988 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 751,
+        "completion_tokens": 108,
+        "total_tokens": 859,
+        "response": "\nThe image depicts an aerial view of a big city with buildings of different sizes in black and white, giving a classic, vintage feel to the scene. The cityscape consists of several tall buildings, both commercial and residential, situated next to each other, exhibiting a diverse range of architectural designs and heights. The scene conveys the hustle and bustle of the city, capturing a moment when many skyscrapers are visible from above. This photo effectively portrays the intricate layout of a city's skyline while highlighting the dense urban environment.",
+        "latency_ms": 1239
+      },
+      "optimized": {
+        "prompt_tokens": 751,
+        "completion_tokens": 59,
+        "total_tokens": 810,
+        "response": "\nThe image features a breathtaking aerial view of a big city featuring numerous tall buildings. Although the cityscape is mostly black and white with white accents, some of the architecture shows through. Buildings are scattered throughout the scene, showing different heights and sizes, creating a well-organized urban environment.",
+        "latency_ms": 915,
+        "optimizations": [
+          "resize 3000x1988 \u2192 2048x1357"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -324
+      }
+    },
+    {
+      "test_name": "real/receipt_real",
+      "category": "real_world",
+      "description": "REAL receipt 2448x3264 \u2014 should OCR route (text-heavy)",
+      "direct": {
+        "prompt_tokens": 752,
+        "completion_tokens": 14,
+        "total_tokens": 766,
+        "response": "\n A receipt with information sits in the foreground of the image.",
+        "latency_ms": 716
+      },
+      "optimized": {
+        "prompt_tokens": 278,
+        "completion_tokens": 5,
+        "total_tokens": 283,
+        "response": "\n55.46",
+        "latency_ms": 349,
+        "optimizations": [
+          "text_density=0.55 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 474,
+        "savings_pct": 63.0,
+        "latency_delta_ms": -367
+      }
+    },
+    {
+      "test_name": "real/document_invoice",
+      "category": "real_world",
+      "description": "REAL invoice 850x1100 \u2014 should OCR route (typed text)",
+      "direct": {
+        "prompt_tokens": 753,
+        "completion_tokens": 102,
+        "total_tokens": 855,
+        "response": "\n\nThis invoice is a standard business invoice for a project with a total cost of $1,000,891.91. The items listed on the invoice include a detailed list of the various work performed in the project. The invoices also detail training sessions held within the same month. In addition to the total cost, the invoice also provides an explanation for any reasons for late payment, which reads: Total Due $1,931.93 due this month. Thanks for your business.",
+        "latency_ms": 1193
+      },
+      "optimized": {
+        "prompt_tokens": 388,
+        "completion_tokens": 23,
+        "total_tokens": 411,
+        "response": "\ninvoice #inv-2024-0847 \ndate: April 15,202004.",
+        "latency_ms": 338,
+        "optimizations": [
+          "text_density=0.85 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 365,
+        "savings_pct": 48.5,
+        "latency_delta_ms": -855
+      }
+    },
+    {
+      "test_name": "real/screenshot_real",
+      "category": "real_world",
+      "description": "REAL screenshot 2066x766 \u2014 should resize + detect text content",
+      "direct": {
+        "prompt_tokens": 752,
+        "completion_tokens": 117,
+        "total_tokens": 869,
+        "response": "\nThe image is a screenshot taken from an Apple computer monitor, displaying the Steps feature's screen. The screen shows two tabs with multiple words written on them. The first word in a cell of the first tab reads \"Steps Bla\", while the first word in the cell of the second tab reads \"Steps Bb\". Both tabs have information related to the steps they represent on the main page, showcasing a detailed screen and making it easy for users to navigate through the instructions and process actions. This screenshot of the steps page is taken from the MacBook Air at Microsoft.",
+        "latency_ms": 1295
+      },
+      "optimized": {
+        "prompt_tokens": 227,
+        "completion_tokens": 127,
+        "total_tokens": 354,
+        "response": "\n'p ID\nStatus\nName\nLogs L\nRunning\n0.57\n2.22\n0.79\n0.82\n0.46\n0.57\n0.6\n0.77\n0.81\n0.58\n0.6\n0.75\n0.53\n0.63\n0.7\n0.67\n0.73\n0.74\n0.74\n0.75\n0.76\n0.79\n0.84\n0.87\n0.91\n0.94\n0.98\n0.99",
+        "latency_ms": 780,
+        "optimizations": [
+          "text_density=0.77 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 525,
+        "savings_pct": 69.8,
+        "latency_delta_ms": -515
+      }
+    }
+  ],
+  "totals": {
+    "total_direct": 3759,
+    "total_optimized": 2395,
+    "total_saved": 1364,
+    "overall_savings_pct": 36.3
+  }
+}

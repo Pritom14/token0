@@ -1,0 +1,147 @@
+{
+  "model": "minicpm-v",
+  "timestamp": "20260326_183832",
+  "results": [
+    {
+      "test_name": "real/photo_nature",
+      "category": "real_world",
+      "description": "REAL photo 4000x2047 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 617,
+        "completion_tokens": 200,
+        "total_tokens": 817,
+        "response": "The landscape photo captures a breathtaking view of a mountainous region with a large lake as its centerpiece. Several prominent natural features can be identified:\n\n1. **Mountain Ranges**: The image showcases towering mountain ranges on both sides of the lake. These mountains have a rugged appearance, with sharp peaks and slopes made of dark rock, indicative of rock formations. The varying shades of brown and grey suggest different mineral compositions and levels of weathering.\n\n2. **Lake**: Dominating the center of the photo is a vast, serene lake. The water appears calm, with a slight ripple, reflecting the light from the sky above. In the distance, on the lake, there is a small island with a structure, likely a dock or a building.\n\n3. **Forests**: Surrounding the lower parts of the image, particularly near the lake and the mountainside, are dense forests with tall evergreen trees. The forested area is diverse, with patches of clear ground indicating a mix of tree species.\n\n",
+        "latency_ms": 13476
+      },
+      "optimized": {
+        "prompt_tokens": 617,
+        "completion_tokens": 153,
+        "total_tokens": 770,
+        "response": "This landscape photo captures a breathtaking natural scene, likely taken in a mountainous region. The dominant features include majestic mountains with steep, rugged faces that rise dramatically from the valley floor. The mountains are a mix of light and shadow, suggesting the presence of mist or early morning light. A serene lake sits in the valley, its calm waters providing a stark contrast to the towering peaks. A small, isolated island adds a sense of mystery and tranquility. Surrounding the lake, there's a dense forest of evergreen trees, hinting at a cool, potentially alpine climate. The foreground reveals a mix of open ground and scattered trees, with a variety of vegetation indicating a diverse ecosystem. The overall ambiance is one of serene beauty, untouched by urban development.",
+        "latency_ms": 7329,
+        "optimizations": [
+          "resize 4000x2047 \u2192 2048x1048"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -6147
+      }
+    },
+    {
+      "test_name": "real/photo_street",
+      "category": "real_world",
+      "description": "REAL photo 3000x1988 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 617,
+        "completion_tokens": 90,
+        "total_tokens": 707,
+        "response": "The image depicts a bustling urban environment, likely in a major city. The skyscrapers in the background suggest a financial or business district. The buildings are closely packed, indicating a high-density urban area. The street level might be filled with pedestrians, vehicles, and urban life, though these details are not visible in this particular shot. Overall, it conveys the hustle and bustle of city life, with a focus on the architectural landscape.",
+        "latency_ms": 6358
+      },
+      "optimized": {
+        "prompt_tokens": 617,
+        "completion_tokens": 200,
+        "total_tokens": 817,
+        "response": "The image is an aerial black and white photograph of a densely packed urban area, showcasing an array of high-rise buildings with varying architectural designs. Without color, the mood is stark and somewhat nostalgic, suggesting a time when the city was expanding rapidly. The buildings tower over the streets, emphasizing the urban density and the vertical growth of the city. The streets themselves are filled with traffic, and there are visible signs of life in the form of moving vehicles, possibly buses or cars, but the people within them are not distinctly visible due to the altitude from which the photo is taken. There is a notable absence of visible green spaces or open areas, indicating a purely built-up environment. This could be a representation of a major city\u2019s commercial district, given the density and type of structures, which are typically office buildings or high-rise apartments. There's a certain dynamism captured in the flow of traffic, yet an underlying stillness brought by the lack of detail and human presence. Overall, it's a slice",
+        "latency_ms": 8246,
+        "optimizations": [
+          "resize 3000x1988 \u2192 2048x1357"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": 1888
+      }
+    },
+    {
+      "test_name": "real/receipt_real",
+      "category": "real_world",
+      "description": "REAL receipt 2448x3264 \u2014 should OCR route (text-heavy)",
+      "direct": {
+        "prompt_tokens": 686,
+        "completion_tokens": 33,
+        "total_tokens": 719,
+        "response": "The receipt is from the Berghotel Grosse Scheidegg in Grindelwald. The total amount is CHF 54.50.",
+        "latency_ms": 5710
+      },
+      "optimized": {
+        "prompt_tokens": 309,
+        "completion_tokens": 39,
+        "total_tokens": 348,
+        "response": "The store is \"Grosse Scheidegg\" located at Grosse Scheidegg, Grindelwald, Switzerland. The total amount is 54,50 CHF.",
+        "latency_ms": 2127,
+        "optimizations": [
+          "text_density=0.55 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 377,
+        "savings_pct": 55.0,
+        "latency_delta_ms": -3583
+      }
+    },
+    {
+      "test_name": "real/document_invoice",
+      "category": "real_world",
+      "description": "REAL invoice 850x1100 \u2014 should OCR route (typed text)",
+      "direct": {
+        "prompt_tokens": 489,
+        "completion_tokens": 47,
+        "total_tokens": 536,
+        "response": "The total amount due is $21,271.21. It is billed to Acme Corporation, with the address being 456 Business Park Blvd, Austin, TX 78701.",
+        "latency_ms": 4352
+      },
+      "optimized": {
+        "prompt_tokens": 456,
+        "completion_tokens": 34,
+        "total_tokens": 490,
+        "response": "The total amount due is $51,621.13. It is billed to Acme Corporation with the attention of John Smith in Procurement.",
+        "latency_ms": 1799,
+        "optimizations": [
+          "text_density=0.85 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 33,
+        "savings_pct": 6.7,
+        "latency_delta_ms": -2553
+      }
+    },
+    {
+      "test_name": "real/screenshot_real",
+      "category": "real_world",
+      "description": "REAL screenshot 2066x766 \u2014 should resize + detect text content",
+      "direct": {
+        "prompt_tokens": 618,
+        "completion_tokens": 200,
+        "total_tokens": 818,
+        "response": "The application or website shown in the screenshot appears to be a software management tool used for workflow automation and monitoring tasks within a computing environment, likely a cluster or a high-performance computing (HPC) system. Here\u2019s a detailed analysis of the UI elements visible in the screenshot:\n\n1. **Title and Navigation Tabs**:\n   - \"Steps (3) Info\": This indicates that the current tab is showing information related to step 3 of a workflow or task.\n   - \"Concurrent steps: 10\": This suggests that there are 10 concurrent steps being executed or monitored.\n\n2. **Filter Options**:\n   - \"Filter steps by status\" dropdown: Allows users to filter the list of steps based on their status (e.g., Running, Completed, etc.).\n   - \"Find steps\" search bar: Users can search for specific steps based on keywords.\n\n3. **Step List**:\n   - Each row in the list represents a step in the workflow:\n    ",
+        "latency_ms": 8262
+      },
+      "optimized": {
+        "prompt_tokens": 244,
+        "completion_tokens": 200,
+        "total_tokens": 444,
+        "response": "The screenshot appears to show a user interface (UI) of Apache Spark's web UI, which allows users to monitor and manage jobs running on a Spark cluster. The UI elements include:\n\n1. **Refresh Steps**: A button likely used to update the information displayed on the page.\n2. **Steps**: A section that displays the status and details of tasks or jobs. In this case, it shows three steps with their statuses, names, logs, creation time, and other relevant information.\n3. **Filter Steps by Status**: A button or option to filter the steps based on their status (e.g., Running, Completed).\n4. **Find Steps**: A feature to search for specific steps by entering relevant information such as job ID, name, etc.\n5. **Columns**: Various columns like 'p ID', 'Status', 'Name', 'Log files', etc., help users to understand the status and progress of the respective tasks.\n6. **Creation Time (UTC)**: The date",
+        "latency_ms": 4518,
+        "optimizations": [
+          "text_density=0.77 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 374,
+        "savings_pct": 60.5,
+        "latency_delta_ms": -3744
+      }
+    }
+  ],
+  "totals": {
+    "total_direct": 3027,
+    "total_optimized": 2243,
+    "total_saved": 784,
+    "overall_savings_pct": 25.9
+  }
+}

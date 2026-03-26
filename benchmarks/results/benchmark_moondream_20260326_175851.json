@@ -1,0 +1,147 @@
+{
+  "model": "moondream",
+  "timestamp": "20260326_175851",
+  "results": [
+    {
+      "test_name": "real/photo_nature",
+      "category": "real_world",
+      "description": "REAL photo 4000x2047 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 751,
+        "completion_tokens": 136,
+        "total_tokens": 887,
+        "response": "\nThe image is of a picturesque valley overlooking a beautiful mountain trail. The valley contains a green forest and trees, with some green plants visible in the foreground. There are three boats visible on the lake within the valley. The scene is a stunning tableau of nature, with a majestic mountain range as the backdrop to the tranquil setting. The light blue sky above the scene also adds to the overall beauty and serenity of the countryside landscape.\n\nThis view of nature showcases the stunning vista of the valley as it meets the mountains in the distance. It appears as a captivating blend of the natural world and its impressive vista of landscape and mountain backdrop.",
+        "latency_ms": 2225
+      },
+      "optimized": {
+        "prompt_tokens": 751,
+        "completion_tokens": 94,
+        "total_tokens": 845,
+        "response": "\nThe image shows a serene landscape with mountains rising in the distance in the background as the sun sinks behind them. The scene is viewed from a high vantage point, providing a panoramic view of the surrounding environment. A beautiful view of trees and mountains can also be seen along the edges of the mountains. a lake that forms part of the overall view. The clear sky enhances the tranquility of the scene and casts a warm glow over the landscape below.",
+        "latency_ms": 1084,
+        "optimizations": [
+          "resize 4000x2047 \u2192 2048x1048"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -1141
+      }
+    },
+    {
+      "test_name": "real/photo_street",
+      "category": "real_world",
+      "description": "REAL photo 3000x1988 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 751,
+        "completion_tokens": 101,
+        "total_tokens": 852,
+        "response": "\nThe image depicts an old and dense cityscape featuring numerous tall buildings stacked on top of one another, creating a densely packed urban environment. The buildings are of various heights and styles, indicative of an active city. This old city appears to have a rich history, and the scene offers a sense of depth and dimension through the black and white effect taken by the photographer. \"The city of New York,\" the title of the image could be displayed as a caption to identify the location of the photograph.",
+        "latency_ms": 1186
+      },
+      "optimized": {
+        "prompt_tokens": 751,
+        "completion_tokens": 91,
+        "total_tokens": 842,
+        "response": "\nThe image is a black and white photograph that captures an aerial view of a city filled with numerous tall buildings. The photograph is shot from a high vantage point, providing a comprehensive view of the cityscape. The streets appear busy, filled with various shapes and sizes of buildings located throughout the scene. With its grandeur and vast layout, the city creates a sense of depth and scale, showcasing the impressive architectural designs and urban planning of the area.",
+        "latency_ms": 1076,
+        "optimizations": [
+          "resize 3000x1988 \u2192 2048x1357"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -110
+      }
+    },
+    {
+      "test_name": "real/receipt_real",
+      "category": "real_world",
+      "description": "REAL receipt 2448x3264 \u2014 should OCR route (text-heavy)",
+      "direct": {
+        "prompt_tokens": 752,
+        "completion_tokens": 55,
+        "total_tokens": 807,
+        "response": "\nA receipt for a restaurant is lying flat, resting on top of a wooden surface. The receipt includes prices like 4.50 Euros for breakfast and 7.50 EUR for lunch. Based on this information, it can be used to determine the total cost of meals.",
+        "latency_ms": 922
+      },
+      "optimized": {
+        "prompt_tokens": 278,
+        "completion_tokens": 132,
+        "total_tokens": 410,
+        "response": "\nThe receipt reads, \"Rech: Nr 4572 Bar, 30.07.2007/13:29:17 Tisch 7/01,ZxLatte Macchiato a 4,50 CHF IxGloki a 5.00 CHF IxSchweinschmitze;18,50,9.00,5.00\". It is from a \"ZxLatte Macchiato a 4,50 CHF IxGloki a 5.00 CHF IxSchweinschmitze\" store. The total amount on the receipt is $38.83.",
+        "latency_ms": 832,
+        "optimizations": [
+          "text_density=0.55 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 474,
+        "savings_pct": 63.0,
+        "latency_delta_ms": -90
+      }
+    },
+    {
+      "test_name": "real/document_invoice",
+      "category": "real_world",
+      "description": "REAL invoice 850x1100 \u2014 should OCR route (typed text)",
+      "direct": {
+        "prompt_tokens": 753,
+        "completion_tokens": 85,
+        "total_tokens": 838,
+        "response": "\n The white receipt in the image shows the results of various expenses for a certain task, like website setup. There is a detailed breakdown of the expenses, which includes the cost of creating a new website, setting up a separate email account, acquiring and maintaining computers or other hardware, and other miscellaneous expenses. The receipt also provides a record of the total spent, allowing for quick reference and better management of financial resources.",
+        "latency_ms": 1038
+      },
+      "optimized": {
+        "prompt_tokens": 388,
+        "completion_tokens": 19,
+        "total_tokens": 407,
+        "response": "\n [0.54, 0.73, 0.85, 0.79]",
+        "latency_ms": 305,
+        "optimizations": [
+          "text_density=0.85 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 365,
+        "savings_pct": 48.5,
+        "latency_delta_ms": -733
+      }
+    },
+    {
+      "test_name": "real/screenshot_real",
+      "category": "real_world",
+      "description": "REAL screenshot 2066x766 \u2014 should resize + detect text content",
+      "direct": {
+        "prompt_tokens": 752,
+        "completion_tokens": 97,
+        "total_tokens": 849,
+        "response": "\nThe image is an electronic screenshot of a computer screen. On the screen, there are a bunch of lists or spreadsheets with different names on them. One of the lists is titled \"Steps\" and spans a large part of the screen. Other lists include those named \"Concrete\" and \"Commissions.\" The lists cover various fields such as work, progress, and payments. The exact content of each list cannot be determined, as all the lists are not visible.",
+        "latency_ms": 1110
+      },
+      "optimized": {
+        "prompt_tokens": 227,
+        "completion_tokens": 114,
+        "total_tokens": 341,
+        "response": "\n'p ID\nStatus\nName\nLogs file: c:\n'p ID\nStatus\nName\nLogs file: s:\n'p ID\nStatus\nName\nLogs file: r:\n'p ID\nStatus\nName\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID\n'p ID",
+        "latency_ms": 718,
+        "optimizations": [
+          "text_density=0.77 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 525,
+        "savings_pct": 69.8,
+        "latency_delta_ms": -392
+      }
+    }
+  ],
+  "totals": {
+    "total_direct": 3759,
+    "total_optimized": 2395,
+    "total_saved": 1364,
+    "overall_savings_pct": 36.3
+  }
+}

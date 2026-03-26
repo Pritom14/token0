@@ -1,0 +1,147 @@
+{
+  "model": "llava:7b",
+  "timestamp": "20260326_183604",
+  "results": [
+    {
+      "test_name": "real/photo_nature",
+      "category": "real_world",
+      "description": "REAL photo 4000x2047 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 602,
+        "completion_tokens": 156,
+        "total_tokens": 758,
+        "response": " In this landscape photo, you can see a breathtaking view of a mountain lake with a distant valley. The mountains are a deep green, suggesting they are covered in dense forests or meadows. The lake itself is a lighter shade of green, indicating shallower water closer to the shore. The sky above is overcast with low clouds, diffusing the light and casting a soft light across the scene. In the foreground, there are trees and shrubs in various shades of green, suggesting an ecosystem rich in biodiversity. The lake and valley are nestled among the mountains and are surrounded by the wilderness of the forest. From this vantage point, it appears to be a peaceful and secluded area, far from urban development. ",
+        "latency_ms": 7677
+      },
+      "optimized": {
+        "prompt_tokens": 602,
+        "completion_tokens": 170,
+        "total_tokens": 772,
+        "response": " The image depicts a serene and natural landscape, featuring a large body of water\u2014likely a lake\u2014with a clear view of mountains in the background. The mountains appear rugged and are densely forested with trees of different shades of green. There is a small island in the center of the lake, surrounded by open water. The sky is partly cloudy, with some darker areas that suggest either rain or the presence of storm clouds.\n\nIn the foreground, there are wildflowers in bloom, suggesting the photograph was taken in the warmer season. The sun is shining brightly, casting light on the trees and giving the lake a shimmering reflection. The overall scene conveys a sense of tranquility and could be a popular spot for tourists or photographers looking to enjoy nature. ",
+        "latency_ms": 4852,
+        "optimizations": [
+          "resize 4000x2047 \u2192 2048x1048"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -2825
+      }
+    },
+    {
+      "test_name": "real/photo_street",
+      "category": "real_world",
+      "description": "REAL photo 3000x1988 \u2014 should resize only, NOT OCR",
+      "direct": {
+        "prompt_tokens": 602,
+        "completion_tokens": 135,
+        "total_tokens": 737,
+        "response": " This is an aerial perspective of a cityscape with iconic mid-20th-century American architecture, such as a series of multi-story buildings packed tightly together, resembling those found in Manhattan. The photo has a black and white filter applied, giving it a vintage or stylized appearance. The streets are laid out in an organized grid pattern, with high-rise buildings on the corner and commercial areas in the center. The view is taken from a great height, giving a sense of the urban density and layout typical of many major cities in the mid-20th century. There are no people or vehicles visible from this angle. ",
+        "latency_ms": 4351
+      },
+      "optimized": {
+        "prompt_tokens": 602,
+        "completion_tokens": 75,
+        "total_tokens": 677,
+        "response": " The image shows a nighttime cityscape viewed from an aerial perspective, showcasing a dense collection of buildings resembling Manhattan skyscrapers. The lighting and shadows give a sense of depth and architectural complexity, while the street appears organized at the top. The image is black and white, emphasizing the contrast and shapes within the urban environment. ",
+        "latency_ms": 3100,
+        "optimizations": [
+          "resize 3000x1988 \u2192 2048x1357"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -1251
+      }
+    },
+    {
+      "test_name": "real/receipt_real",
+      "category": "real_world",
+      "description": "REAL receipt 2448x3264 \u2014 should OCR route (text-heavy)",
+      "direct": {
+        "prompt_tokens": 605,
+        "completion_tokens": 200,
+        "total_tokens": 805,
+        "response": " Das Bild zeigt eine Rechnung, die in Deutsch verfasst ist. Hier ist ein Bildtext\u00fcbchen mit dem Englischen und Arabischen Text des Bildes:\n\n```\nArabic Text: \u0627\u0644\u0641\u0627\u062a\u0648\u0631\u0629 \u0627\u0644\u0634\u0647\u064a\u0629 \u0628\u0648\u062c\u0648\u062f \u0627\u0644\u0645\u0644\u0643 \u0627\u0644\u0641\u0631\u0646\u0633\u064a \u0648\u0645\u0646 \u0623\u0646\u062f\u0627\u0645\u060c \u0648\u0647\u0648 \u0627\u0644\u062e\u0644\u064a\u0637 \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u060c \u0648\u0647\u0648 \u0627\u0644\u0645\u0646\u062f\u0648\u0628 \u0637\u0627\u0644\u062e \u0627\u0644\u0623\u0639\u0645\u0627\u0631 \u0648\u0627\u0644\u0645\u0639\u062f\u0627\u062a \u0627\u0644\u0627\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0629\u060c \u0648\u0647\u0648 \u0627\u0644\u0645\u0627\u0644\u0627 \u0645\u0646 \u0634\u0631\u0643\u0629 \u0628\u0627\u0631 \u0645\u0635\u0631.\n\n\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0632\u064a\u0648\u0631: 17/03/2022\n\n\u062c\u0645\u0639 \u0633\u0639\u0631\u0627\u062a \u0627\u0644",
+        "latency_ms": 5568
+      },
+      "optimized": {
+        "prompt_tokens": 320,
+        "completion_tokens": 28,
+        "total_tokens": 348,
+        "response": " The receipt is from Berqhote's, and the total amount is CHF 54.50. ",
+        "latency_ms": 1468,
+        "optimizations": [
+          "text_density=0.55 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 285,
+        "savings_pct": 47.1,
+        "latency_delta_ms": -4100
+      }
+    },
+    {
+      "test_name": "real/document_invoice",
+      "category": "real_world",
+      "description": "REAL invoice 850x1100 \u2014 should OCR route (typed text)",
+      "direct": {
+        "prompt_tokens": 607,
+        "completion_tokens": 200,
+        "total_tokens": 807,
+        "response": " Invoice details:\n\n- Invoice was \"sent from\" California and \"from\" San Francisco (as indicated by the IP addresses given).\n- Invoice was \"sent to\" Washington Square and from \"Inv. #\" 930.\n- The \"date\" on the invoice is \"03/17/2023.\"\n- The invoice is for \"1 Item,\" which is for a \"Service Fee.\"\n- The \"Description\" of the service is \"Docs & Development.\"\n- The total \"Due\" amount on the invoice is \"$2,211.18.\"\n- The terms payment \"7 day net\" from the invoice date of 03/17/2023 apply.\n\nAdditional detail:\n\n- The amount credited to the \"Agency\" on this invoice is 0.\n- The document is marked with a",
+        "latency_ms": 5574
+      },
+      "optimized": {
+        "prompt_tokens": 502,
+        "completion_tokens": 44,
+        "total_tokens": 546,
+        "response": " The total amount due on this invoice is $211,271.13, and it is billed to Acme Corporation, attn: John Smith, Procurement. ",
+        "latency_ms": 2097,
+        "optimizations": [
+          "text_density=0.85 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 105,
+        "savings_pct": 17.3,
+        "latency_delta_ms": -3477
+      }
+    },
+    {
+      "test_name": "real/screenshot_real",
+      "category": "real_world",
+      "description": "REAL screenshot 2066x766 \u2014 should resize + detect text content",
+      "direct": {
+        "prompt_tokens": 604,
+        "completion_tokens": 200,
+        "total_tokens": 804,
+        "response": " The image appears to be a screenshot of a computer interface displaying a command line interface of a Windows operating system (based on the recognizable Start menu design). The screen shows the command `for /r %d @(\"set \" & for /d %c in (..\\..\\..\\..\\..\\..\\..)\" do @echo off & type %c & set \"cmd /e off\" & start \"cmd /k %cmd\" & exit\">nul && start \"cmd /e on\" && type %cmd & exit`\n\nThis command is looping through a directory structure to execute a `for` loop command. Inside the loop, the command will:\n\n1. Set the command prompt status to on and off in sequence.\n2. Execute a command `type %cmd` which is likely to display the contents of a text file named `%cmd` in a text console.\n3. Start a new command prompt",
+        "latency_ms": 5633
+      },
+      "optimized": {
+        "prompt_tokens": 264,
+        "completion_tokens": 200,
+        "total_tokens": 464,
+        "response": " The image shows a web interface with a table displaying various steps in a process. The table has the following columns:\n\n* Steps: This column displays the name of each step, and each step is denoted as a unit of work.\n* Info: This column contains additional information about each step.\n* p ID: This column shows a process ID for each step.\n* Status: This column displays the current status of each step (e.g., \"Running\" or \"Completed\").\n* Name: This column shows the name of each step.\n* Log files: This column displays the log files associated with each step.\n* Creation time (UTC): This column displays the time when the step was created, based on the UTC time zone.\n\nAt the top of the table, there are three buttons: \"Refresh steps,\" \"Filter steps by status,\" and \"Find steps.\" There is also a search bar labeled \"Find steps,\" where users",
+        "latency_ms": 4493,
+        "optimizations": [
+          "text_density=0.77 > 0.52 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 340,
+        "savings_pct": 56.3,
+        "latency_delta_ms": -1140
+      }
+    }
+  ],
+  "totals": {
+    "total_direct": 3020,
+    "total_optimized": 2290,
+    "total_saved": 730,
+    "overall_savings_pct": 24.2
+  }
+}

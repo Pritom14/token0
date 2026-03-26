@@ -1,0 +1,180 @@
+{
+  "model": "moondream",
+  "timestamp": "20260326_161627",
+  "results": [
+    {
+      "image": "large_photo.jpg",
+      "size": "4000x3000",
+      "file_size_kb": 8877.9,
+      "prompt": "Describe what you see in this image in one sentence.",
+      "direct": {
+        "prompt_tokens": 748,
+        "completion_tokens": 70,
+        "total_tokens": 818,
+        "response": "\nThe image shows a display screen of a television, which is displaying a background that appears to be a text-based background. The background consists of a blurry and pixelated image of a brick pattern in gray and red colors. This creates an interesting and intriguing visual effect on the display screen, adding a unique design element to the viewing experience.",
+        "latency_ms": 3465
+      },
+      "optimized": {
+        "prompt_tokens": 748,
+        "completion_tokens": 71,
+        "total_tokens": 819,
+        "response": "\nThe image consists of a square backdrop featuring a gradient with gray and white tones. In the middle of the background, there is a square of gray which appears to be a border, framing the center of the image where the gradient ends. The border fills the entire space, except for a small portion near the top right corner and bottom right corner.",
+        "latency_ms": 989,
+        "optimizations": [
+          "resize 4000x3000 \u2192 2048x1536"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -2476
+      }
+    },
+    {
+      "image": "document_screenshot.png",
+      "size": "800x1100",
+      "file_size_kb": 8.1,
+      "prompt": "What type of document is this? Describe its structure.",
+      "direct": {
+        "prompt_tokens": 748,
+        "completion_tokens": 59,
+        "total_tokens": 807,
+        "response": "\nThe image shows a piece of paper with a series of identical black lines forming a pattern. The paper is printed on white paper with black text and is placed on a gray background. The lines from the patterns run throughout the entire paper, creating a consistent and repetitive design across the material.",
+        "latency_ms": 898
+      },
+      "optimized": {
+        "prompt_tokens": 748,
+        "completion_tokens": 126,
+        "total_tokens": 874,
+        "response": "\nIn the image of a piece of paper, there are multiple lines and tabs arranged throughout its length. These lines may represent different information or be tabs, possibly indicating sections or topics related to a specific subject or project. The layout and layout on the paper could be seen as both organized and confusing, as various information types are packed into a single document. This could make it challenging to understand the purpose or content of these papers at a quick glance. The presence of the sheet of paper, with both black and white lines and the tabs, might suggest a more technical or technical-oriented document that requires careful attention and focus.",
+        "latency_ms": 1233,
+        "optimizations": [
+          "convert png \u2192 jpeg q=85"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": 335
+      }
+    },
+    {
+      "image": "small_photo.jpg",
+      "size": "300x300",
+      "file_size_kb": 39.7,
+      "prompt": "What is the dominant color and shape in this image?",
+      "direct": {
+        "prompt_tokens": 747,
+        "completion_tokens": 82,
+        "total_tokens": 829,
+        "response": "\nThe image features a large red circle with a background of colors - primarily orange, red, yellow, and more shades of color that appear scattered throughout. Some of these colored pieces may overlap, creating a visually rich composition. The bright red circle dominates the space, drawing the viewer's attention. This artwork seems to showcase a creative use of overlapping, mixed colors to produce an intriguing and abstract visual experience.",
+        "latency_ms": 1015
+      },
+      "optimized": {
+        "prompt_tokens": 747,
+        "completion_tokens": 56,
+        "total_tokens": 803,
+        "response": "\nIn the image, a red circle is the focal point of the composition. Surrounding the red circle are small dots in various colors, some in shades of green, pink, or blue. The arrangement of these colored dots seems to create an abstract pattern or gradient.",
+        "latency_ms": 861,
+        "optimizations": [
+          "image <=512px \u2014 low detail equivalent"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -154
+      }
+    },
+    {
+      "image": "receipt.png",
+      "size": "400x900",
+      "file_size_kb": 3.6,
+      "prompt": "List the items and their prices shown in this receipt.",
+      "direct": {
+        "prompt_tokens": 747,
+        "completion_tokens": 101,
+        "total_tokens": 848,
+        "response": "\nA grey, plain white receipt, like the one depicted above, typically displays the price of an item. In the image, the receipt shows a $1.00 item, possibly a product priced at 99 cents, which was a common price for items before prices were standardized in most countries. Regardless of the cost, it is important for both businesses and customers to keep receipts to be able to dispute charges if necessary. They also serve as valuable documents for tax purposes and for keeping track of expenses.",
+        "latency_ms": 1124
+      },
+      "optimized": {
+        "prompt_tokens": 747,
+        "completion_tokens": 53,
+        "total_tokens": 800,
+        "response": "\nThe image features a black and white document with many lines and dots on a white background. The text on the paper is in a sans serif font and is printed in black ink. The content appears to be an instruction or guide for a specific purpose.",
+        "latency_ms": 844,
+        "optimizations": [
+          "convert png \u2192 jpeg q=85"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": -280
+      }
+    },
+    {
+      "image": "already_optimized.jpg",
+      "size": "512x512",
+      "file_size_kb": 128.1,
+      "prompt": "Describe the contents of this image briefly.",
+      "direct": {
+        "prompt_tokens": 745,
+        "completion_tokens": 93,
+        "total_tokens": 838,
+        "response": "\nThe image is a detailed, flat digital image of a gray screen. The screen displays an almost perfect grid-like pattern, with various shades of the same color appearing as small dots throughout the image. The background features a range of gray tones, but these are mixed and overlapping, making the colors appear muddy. The image does not contain any text or countable objects, and the pattern is uniform and continuous, filling the entire space and dominating the scene.",
+        "latency_ms": 1075
+      },
+      "optimized": {
+        "prompt_tokens": 745,
+        "completion_tokens": 104,
+        "total_tokens": 849,
+        "response": "\nIn the image, there is an abstract or grid-like tiled wall, filled with various shades of shades, including colors in the blues, greens, and pinks. The wall appears to be made of bricks, with each section individually unique. The wall is in predominantly gray tones, with some variations of blue, green, and pink colors interspersed throughout. This visually intriguing pattern resembles the texture of a honeycomb or a fabric made of multiple small squares, resulting in an interesting and cohesive design.",
+        "latency_ms": 1114,
+        "optimizations": [
+          "image <=512px \u2014 low detail equivalent"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 0,
+        "savings_pct": 0.0,
+        "latency_delta_ms": 39
+      }
+    },
+    {
+      "image": "large_screenshot.png",
+      "size": "1920x1080",
+      "file_size_kb": 9.6,
+      "prompt": "What application or interface is shown in this screenshot?",
+      "direct": {
+        "prompt_tokens": 746,
+        "completion_tokens": 96,
+        "total_tokens": 842,
+        "response": "\nOne of the main elements that make up the image in the example is a close-up view of a computer screen, which displays a menu. Within the menu, there are various options such as \"tab\" and \"jump\" written in black. It also includes a \"paste mode\" icon which might be used for transferring items between windows. The \"paste mode\" icon stands out against the white background of the menu screen, making it easily visible to the user.",
+        "latency_ms": 1088
+      },
+      "optimized": {
+        "prompt_tokens": 32,
+        "completion_tokens": 1,
+        "total_tokens": 33,
+        "response": "",
+        "latency_ms": 76,
+        "optimizations": [
+          "text_density=0.84 > 0.6 \u2014 OCR route"
+        ]
+      },
+      "savings": {
+        "tokens_saved": 714,
+        "savings_pct": 95.7,
+        "latency_delta_ms": -1012
+      }
+    }
+  ],
+  "totals": {
+    "total_direct_tokens": 4481,
+    "total_optimized_tokens": 3767,
+    "total_saved": 714,
+    "overall_savings_pct": 15.9
+  }
+}
