@@ -188,7 +188,12 @@ GOOGLE_API_KEY=...
 
 Start the server:
 ```bash
-uvicorn src.main:app --reload
+token0 serve
+```
+
+Or with options:
+```bash
+token0 serve --port 3000 --reload
 ```
 
 That's it. Token0 starts in **lite mode** by default — SQLite + in-memory cache. No Postgres, Redis, or Docker required.
