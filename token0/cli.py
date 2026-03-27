@@ -34,7 +34,7 @@ def main():
 
     if args.command == "serve":
         uvicorn.run(
-            "src.main:app",
+            "token0.main:app",
             host=args.host,
             port=args.port,
             reload=args.reload,

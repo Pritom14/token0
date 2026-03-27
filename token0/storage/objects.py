@@ -3,7 +3,7 @@
 import io
 import os
 
-from src.config import settings
+from token0.config import settings
 
 _client = None
 _lite_dir: str | None = None

@@ -16,8 +16,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff
-      - run: ruff check src/ tests/
-      - run: ruff format --check src/ tests/
+      - run: ruff check token0/ tests/
+      - run: ruff format --check token0/ tests/
 
   test:
     name: Test (Python ${{ matrix.python-version }})
@@ -37,7 +37,7 @@ jobs:
         env:
           STORAGE_MODE: lite
         run: |
-          python -m pytest tests/ -v --tb=short --cov=src --cov-report=term-missing
+          python -m pytest tests/ -v --tb=short --cov=token0 --cov-report=term-missing
       - name: Upload coverage
         if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v4

@@ -185,7 +185,7 @@ def analyze_image(image_input: str) -> tuple[ImageAnalysis, bytes, Image.Image]:
 
     text_density = detect_text_density(pil_image)
 
-    from src.config import settings
+    from token0.config import settings
 
     analysis = ImageAnalysis(
         width=width,

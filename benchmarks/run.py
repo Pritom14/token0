@@ -26,10 +26,10 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 
-from src.optimization.analyzer import analyze_image
-from src.optimization.router import plan_optimization
-from src.optimization.transformer import transform_image
-from src.providers.ollama import OllamaProvider
+from token0.optimization.analyzer import analyze_image
+from token0.optimization.router import plan_optimization
+from token0.optimization.transformer import transform_image
+from token0.providers.ollama import OllamaProvider
 
 BENCHMARK_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGES_DIR = os.path.join(BENCHMARK_DIR, "images")
@@ -92,7 +92,10 @@ def load_image_as_data_uri(image_path: str) -> str:
 
 
 def optimize_message(messages: list[dict], model: str) -> tuple[list[dict], list[str], int, int]:
-    """Run Token0 optimization on messages. Returns (optimized_messages, optimizations, tokens_before, tokens_after)."""
+    """Run Token0 optimization on messages.
+
+    Returns (optimized_messages, optimizations, tokens_before, tokens_after).
+    """
     optimized = []
     all_optimizations = []
     total_before = 0
@@ -119,20 +122,24 @@ def optimize_message(messages: list[dict], model: str) -> tuple[list[dict], list
 
                 if plan.use_ocr_route:
                     result = transform_image(plan, analysis, raw_bytes, pil_image)
-                    opt_parts.append({
-                        "type": "text",
-                        "text": f"[Extracted text from image]:\n{result['content']}",
-                    })
+                    opt_parts.append(
+                        {
+                            "type": "text",
+                            "text": f"[Extracted text from image]:\n{result['content']}",
+                        }
+                    )
                 elif any([plan.resize, plan.recompress_jpeg, plan.force_detail_low]):
                     result = transform_image(plan, analysis, raw_bytes, pil_image)
                     detail = "low" if plan.force_detail_low else "auto"
-                    opt_parts.append({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{result['media_type']};base64,{result['base64']}",
-                            "detail": detail,
-                        },
-                    })
+                    opt_parts.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{result['media_type']};base64,{result['base64']}",
+                                "detail": detail,
+                            },
+                        }
+                    )
                 else:
                     opt_parts.append(part)
                     if not plan.reasons:
@@ -159,10 +166,12 @@ async def run_test(
     print(f"  [{test_name}] — {description}")
 
     # Direct
-    print(f"    Direct...", end="", flush=True)
+    print("    Direct...", end="", flush=True)
     start = time.time()
     try:
-        direct_resp = await provider.chat_completion(model=model, messages=messages_direct, max_tokens=200)
+        direct_resp = await provider.chat_completion(
+            model=model, messages=messages_direct, max_tokens=200
+        )
         direct_latency = int((time.time() - start) * 1000)
         print(f" {direct_latency}ms, {direct_resp.prompt_tokens} prompt tokens")
     except Exception as e:
@@ -170,13 +179,15 @@ async def run_test(
         return BenchmarkResult(test_name=test_name, category=category, description=description)
 
     # Optimized
-    print(f"    Token0...", end="", flush=True)
+    print("    Token0...", end="", flush=True)
     opt_messages, optimizations, est_before, est_after = optimize_message(
         messages_for_optimization, model
     )
     start = time.time()
     try:
-        opt_resp = await provider.chat_completion(model=model, messages=opt_messages, max_tokens=200)
+        opt_resp = await provider.chat_completion(
+            model=model, messages=opt_messages, max_tokens=200
+        )
         opt_latency = int((time.time() - start) * 1000)
         print(f" {opt_latency}ms, {opt_resp.prompt_tokens} prompt tokens")
     except Exception as e:
@@ -200,11 +211,13 @@ async def run_test(
         optimizations_applied=optimizations,
     )
 
-    saved = result.prompt_token_diff
     pct = result.token_savings_pct
     sign = "+" if result.latency_delta_ms > 0 else ""
     opts_str = ", ".join(optimizations[:2]) if optimizations else "none"
-    print(f"    → Tokens: {direct_resp.prompt_tokens} → {opt_resp.prompt_tokens} ({pct}% saved) | Latency: {sign}{result.latency_delta_ms}ms | {opts_str}")
+    print(
+        f"    → Tokens: {direct_resp.prompt_tokens} → {opt_resp.prompt_tokens} "
+        f"({pct}% saved) | Latency: {sign}{result.latency_delta_ms}ms | {opts_str}"
+    )
     print()
 
     return result
@@ -214,17 +227,48 @@ async def run_test(
 # TEST SUITES
 # ============================================================================
 
+
 async def suite_images(provider: OllamaProvider, model: str) -> list[BenchmarkResult]:
     """Single image tests — the core optimization benchmarks."""
     results = []
 
     test_cases = [
-        ("large_photo", "large_photo.jpg", "Describe what you see in one sentence.", "resize 4000x3000 → model max"),
-        ("document_png", "document_screenshot.png", "What type of document is this?", "OCR routing for text-heavy PNG"),
-        ("small_photo", "small_photo.jpg", "What is the dominant color and shape?", "detail mode for small image"),
-        ("receipt", "receipt.png", "List the items and prices on this receipt.", "OCR routing for receipt"),
-        ("optimized_jpg", "already_optimized.jpg", "Describe the contents briefly.", "passthrough — already optimal"),
-        ("large_screenshot", "large_screenshot.png", "What interface is shown here?", "resize + PNG→JPEG + possible OCR"),
+        (
+            "large_photo",
+            "large_photo.jpg",
+            "Describe what you see in one sentence.",
+            "resize 4000x3000 → model max",
+        ),
+        (
+            "document_png",
+            "document_screenshot.png",
+            "What type of document is this?",
+            "OCR routing for text-heavy PNG",
+        ),
+        (
+            "small_photo",
+            "small_photo.jpg",
+            "What is the dominant color and shape?",
+            "detail mode for small image",
+        ),
+        (
+            "receipt",
+            "receipt.png",
+            "List the items and prices on this receipt.",
+            "OCR routing for receipt",
+        ),
+        (
+            "optimized_jpg",
+            "already_optimized.jpg",
+            "Describe the contents briefly.",
+            "passthrough — already optimal",
+        ),
+        (
+            "large_screenshot",
+            "large_screenshot.png",
+            "What interface is shown here?",
+            "resize + PNG→JPEG + possible OCR",
+        ),
     ]
 
     for name, filename, prompt, desc in test_cases:
@@ -234,13 +278,15 @@ async def suite_images(provider: OllamaProvider, model: str) -> list[BenchmarkRe
             continue
 
         data_uri = load_image_as_data_uri(path)
-        messages = [{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": data_uri}},
-            ],
-        }]
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": data_uri}},
+                ],
+            }
+        ]
 
         result = await run_test(provider, model, f"img/{name}", TestCategory.IMAGE, desc, messages)
         results.append(result)
@@ -254,16 +300,26 @@ async def suite_text(provider: OllamaProvider, model: str) -> list[BenchmarkResu
 
     text_cases = [
         ("short_text", "What is 2+2?", "short text — zero overhead check"),
-        ("medium_text", "Explain the difference between TCP and UDP in networking. Be concise.", "medium text — zero overhead"),
-        ("long_text", (
-            "You are an expert software architect. Review the following design decision: "
-            "We chose to use PostgreSQL over MongoDB for our e-commerce platform because we need "
-            "strong ACID transactions for payment processing, complex JOIN queries for inventory "
-            "management across warehouses, and we already have team expertise in SQL. The tradeoff "
-            "is that our product catalog with variable attributes might be slightly less natural "
-            "to model in a relational schema compared to a document store. "
-            "What are the pros and cons of this decision? Be concise."
-        ), "long text — ensure no token inflation"),
+        (
+            "medium_text",
+            "Explain the difference between TCP and UDP in networking. Be concise.",
+            "medium text — zero overhead",
+        ),
+        (
+            "long_text",
+            (
+                "You are an expert software architect. Review the following design decision: "
+                "We chose to use PostgreSQL over MongoDB for our e-commerce "
+                "platform because we need strong ACID transactions for payment "
+                "processing, complex JOIN queries for inventory management "
+                "across warehouses, and we already have team expertise in SQL. "
+                "The tradeoff is that our product catalog with variable "
+                "attributes might be slightly less natural to model in a "
+                "relational schema compared to a document store. "
+                "What are the pros and cons of this decision? Be concise."
+            ),
+            "long text — ensure no token inflation",
+        ),
         ("system_prompt", None, "system + user message — no image, no overhead"),
     ]
 
@@ -271,7 +327,10 @@ async def suite_text(provider: OllamaProvider, model: str) -> list[BenchmarkResu
         if name == "system_prompt":
             messages = [
                 {"role": "system", "content": "You are a helpful coding assistant. Be concise."},
-                {"role": "user", "content": "Write a Python function to check if a number is prime."},
+                {
+                    "role": "user",
+                    "content": "Write a Python function to check if a number is prime.",
+                },
             ]
         else:
             messages = [{"role": "user", "content": prompt}]
@@ -293,18 +352,23 @@ async def suite_multi_image(provider: OllamaProvider, model: str) -> list[Benchm
         large_uri = load_image_as_data_uri(large_path)
         small_uri = load_image_as_data_uri(small_path)
 
-        messages = [{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "Compare these two images. What are the differences?"},
-                {"type": "image_url", "image_url": {"url": large_uri}},
-                {"type": "image_url", "image_url": {"url": small_uri}},
-            ],
-        }]
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Compare these two images. What are the differences?"},
+                    {"type": "image_url", "image_url": {"url": large_uri}},
+                    {"type": "image_url", "image_url": {"url": small_uri}},
+                ],
+            }
+        ]
 
         result = await run_test(
-            provider, model, "multi/two_images",
-            TestCategory.MULTI_IMAGE, "two images — both should be independently optimized",
+            provider,
+            model,
+            "multi/two_images",
+            TestCategory.MULTI_IMAGE,
+            "two images — both should be independently optimized",
             messages,
         )
         results.append(result)
@@ -313,19 +377,27 @@ async def suite_multi_image(provider: OllamaProvider, model: str) -> list[Benchm
     receipt_path = os.path.join(IMAGES_DIR, "receipt.png")
     doc_path = os.path.join(IMAGES_DIR, "document_screenshot.png")
     if os.path.exists(small_path) and os.path.exists(receipt_path) and os.path.exists(doc_path):
-        messages = [{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "Describe each of these three images briefly."},
-                {"type": "image_url", "image_url": {"url": load_image_as_data_uri(small_path)}},
-                {"type": "image_url", "image_url": {"url": load_image_as_data_uri(receipt_path)}},
-                {"type": "image_url", "image_url": {"url": load_image_as_data_uri(doc_path)}},
-            ],
-        }]
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Describe each of these three images briefly."},
+                    {"type": "image_url", "image_url": {"url": load_image_as_data_uri(small_path)}},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": load_image_as_data_uri(receipt_path)},
+                    },
+                    {"type": "image_url", "image_url": {"url": load_image_as_data_uri(doc_path)}},
+                ],
+            }
+        ]
 
         result = await run_test(
-            provider, model, "multi/three_mixed",
-            TestCategory.MULTI_IMAGE, "3 mixed images — photo + receipt + document",
+            provider,
+            model,
+            "multi/three_mixed",
+            TestCategory.MULTI_IMAGE,
+            "3 mixed images — photo + receipt + document",
             messages,
         )
         results.append(result)
@@ -364,7 +436,9 @@ async def suite_multi_turn(provider: OllamaProvider, model: str) -> list[Benchma
     ]
 
     result = await run_test(
-        provider, model, "turn/follow_up",
+        provider,
+        model,
+        "turn/follow_up",
         TestCategory.MULTI_TURN,
         "multi-turn — image in turn 1, text follow-up in turn 2 (image re-sent in history)",
         messages_turn2,
@@ -375,7 +449,9 @@ async def suite_multi_turn(provider: OllamaProvider, model: str) -> list[Benchma
     messages_turn3 = messages_turn2 + [
         {
             "role": "assistant",
-            "content": "The dominant colors appear to be various shades of blue, green, and warm tones.",
+            "content": (
+                "The dominant colors appear to be various shades of blue, green, and warm tones."
+            ),
         },
         {
             "role": "user",
@@ -384,7 +460,9 @@ async def suite_multi_turn(provider: OllamaProvider, model: str) -> list[Benchma
     ]
 
     result = await run_test(
-        provider, model, "turn/third_turn",
+        provider,
+        model,
+        "turn/third_turn",
         TestCategory.MULTI_TURN,
         "multi-turn — 3 turns deep, image still in history (context accumulation test)",
         messages_turn3,
@@ -395,7 +473,10 @@ async def suite_multi_turn(provider: OllamaProvider, model: str) -> list[Benchma
 
 
 async def suite_task_types(provider: OllamaProvider, model: str) -> list[BenchmarkResult]:
-    """Different task types with same image — test if optimization preserves accuracy across tasks."""
+    """Different task types with same image.
+
+    Test if optimization preserves accuracy across tasks.
+    """
     results = []
 
     screenshot_path = os.path.join(IMAGES_DIR, "large_screenshot.png")
@@ -404,20 +485,34 @@ async def suite_task_types(provider: OllamaProvider, model: str) -> list[Benchma
 
     screenshot_uri = load_image_as_data_uri(screenshot_path)
     tasks = [
-        ("task/classify", "Classify this image in one word: photo, screenshot, document, or chart?", "classification task"),
-        ("task/describe", "Describe everything you see in this image in detail.", "detailed description task"),
+        (
+            "task/classify",
+            "Classify this image in one word: photo, screenshot, document, or chart?",
+            "classification task",
+        ),
+        (
+            "task/describe",
+            "Describe everything you see in this image in detail.",
+            "detailed description task",
+        ),
         ("task/extract", "List all text or labels visible in this image.", "text extraction task"),
-        ("task/question", "Is this image showing a mobile app or a desktop application?", "yes/no question task"),
+        (
+            "task/question",
+            "Is this image showing a mobile app or a desktop application?",
+            "yes/no question task",
+        ),
     ]
 
     for name, prompt, desc in tasks:
-        messages = [{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": screenshot_uri}},
-            ],
-        }]
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": screenshot_uri}},
+                ],
+            }
+        ]
 
         result = await run_test(provider, model, name, TestCategory.TASK_TYPE, desc, messages)
         results.append(result)
@@ -475,23 +570,30 @@ async def suite_real_world(provider: OllamaProvider, model: str) -> list[Benchma
             continue
 
         from PIL import Image as PILImage
+
         with PILImage.open(path) as img:
             w, h = img.size
         file_kb = os.path.getsize(path) / 1024
         print(f"  [{filename}] ({w}x{h}, {file_kb:.0f}KB)")
 
         data_uri = load_image_as_data_uri(path)
-        messages = [{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": data_uri}},
-            ],
-        }]
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": data_uri}},
+                ],
+            }
+        ]
 
         result = await run_test(
-            provider, model, f"real/{filename.split('.')[0]}",
-            "real_world", desc, messages,
+            provider,
+            model,
+            f"real/{filename.split('.')[0]}",
+            "real_world",
+            desc,
+            messages,
         )
         results.append(result)
 
@@ -528,12 +630,17 @@ def print_summary(results: list[BenchmarkResult], model: str):
 
     for cat, cat_results in categories.items():
         print(f"\n  [{cat.upper()}]")
-        print(f"  {'Test':<30} {'Direct':>10} {'Token0':>10} {'Saved':>8} {'Savings':>8} {'Latency Δ':>10}  Optimizations")
+        print(
+            f"  {'Test':<30} {'Direct':>10} {'Token0':>10} "
+            f"{'Saved':>8} {'Savings':>8} {'Latency Δ':>10}  Optimizations"
+        )
         print(f"  {'-' * 30} {'-' * 10} {'-' * 10} {'-' * 8} {'-' * 8} {'-' * 10}  {'-' * 30}")
 
         for r in cat_results:
             sign = "+" if r.latency_delta_ms > 0 else ""
-            opts = ", ".join(r.optimizations_applied[:2]) if r.optimizations_applied else "passthrough"
+            opts = (
+                ", ".join(r.optimizations_applied[:2]) if r.optimizations_applied else "passthrough"
+            )
             if len(opts) > 30:
                 opts = opts[:27] + "..."
             print(
@@ -550,13 +657,20 @@ def print_summary(results: list[BenchmarkResult], model: str):
     total_pct = round(100 * total_saved / total_direct, 1) if total_direct > 0 else 0
 
     print(f"\n  {'=' * 120}")
-    print(f"  GRAND TOTAL: {total_direct} → {total_optimized} prompt tokens ({total_saved} saved, {total_pct}%)")
+    print(
+        f"  GRAND TOTAL: {total_direct} → {total_optimized} "
+        f"prompt tokens ({total_saved} saved, {total_pct}%)"
+    )
 
     # Text overhead check
     text_results = [r for r in results if r.category == TestCategory.TEXT]
     if text_results:
         overhead = sum(r.optimized_prompt_tokens - r.direct_prompt_tokens for r in text_results)
-        print(f"  TEXT OVERHEAD CHECK: {overhead} extra tokens across {len(text_results)} text-only requests", end="")
+        print(
+            f"  TEXT OVERHEAD CHECK: {overhead} extra tokens "
+            f"across {len(text_results)} text-only requests",
+            end="",
+        )
         if overhead == 0:
             print(" — PASS (zero overhead)")
         elif overhead <= len(text_results):
@@ -567,7 +681,7 @@ def print_summary(results: list[BenchmarkResult], model: str):
     print(f"  {'=' * 120}")
 
     # Response comparison
-    print(f"\n  RESPONSE COMPARISON (first 100 chars)")
+    print("\n  RESPONSE COMPARISON (first 100 chars)")
     print(f"  {'-' * 100}")
     for r in results:
         d = r.direct_response[:100].replace("\n", " ").strip()
@@ -621,8 +735,10 @@ def save_results(results: list[BenchmarkResult], model: str):
             "total_optimized": sum(r.optimized_prompt_tokens for r in results),
             "total_saved": sum(r.prompt_token_diff for r in results),
             "overall_savings_pct": round(
-                100 * sum(r.prompt_token_diff for r in results)
-                / max(sum(r.direct_prompt_tokens for r in results), 1), 1,
+                100
+                * sum(r.prompt_token_diff for r in results)
+                / max(sum(r.direct_prompt_tokens for r in results), 1),
+                1,
             ),
         },
     }
@@ -637,6 +753,7 @@ async def run_benchmark(model: str, suite: str = "all"):
     if not os.path.exists(IMAGES_DIR) or len(os.listdir(IMAGES_DIR)) < 6:
         print("Generating test images...")
         from benchmarks.generate_test_images import generate_all
+
         generate_all()
         print()
 
@@ -667,7 +784,9 @@ async def run_benchmark(model: str, suite: str = "all"):
 def main():
     parser = argparse.ArgumentParser(description="Token0 Benchmark")
     parser.add_argument("--model", default="moondream", help="Ollama vision model")
-    parser.add_argument("--suite", default="all", choices=["all", *SUITES.keys()], help="Test suite to run")
+    parser.add_argument(
+        "--suite", default="all", choices=["all", *SUITES.keys()], help="Test suite to run"
+    )
     args = parser.parse_args()
     asyncio.run(run_benchmark(model=args.model, suite=args.suite))
 

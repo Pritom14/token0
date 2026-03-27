@@ -2,7 +2,7 @@
 
 from openai import AsyncOpenAI
 
-from src.providers.base import BaseProvider, ProviderResponse
+from token0.providers.base import BaseProvider, ProviderResponse
 
 
 class OpenAIProvider(BaseProvider):

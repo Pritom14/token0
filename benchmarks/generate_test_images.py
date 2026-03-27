@@ -4,7 +4,7 @@ import os
 import random
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 BENCHMARK_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGES_DIR = os.path.join(BENCHMARK_DIR, "images")
@@ -26,7 +26,9 @@ def generate_large_photo(filename="large_photo.jpg"):
     img = Image.fromarray(arr)
     path = os.path.join(IMAGES_DIR, filename)
     img.save(path, "JPEG", quality=90)
-    print(f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)")
+    print(
+        f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)"
+    )
     return path
 
 
@@ -62,11 +64,15 @@ def generate_document_screenshot(filename="document_screenshot.png"):
             x1 = 60 + col * 220
             y1 = y + row * 30
             draw.rectangle([x1, y1, x1 + 210, y1 + 25], outline=(100, 100, 100))
-            draw.rectangle([x1 + 5, y1 + 5, x1 + 60 + random.randint(0, 100), y1 + 18], fill=(40, 40, 40))
+            draw.rectangle(
+                [x1 + 5, y1 + 5, x1 + 60 + random.randint(0, 100), y1 + 18], fill=(40, 40, 40)
+            )
 
     path = os.path.join(IMAGES_DIR, filename)
     img.save(path, "PNG")
-    print(f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)")
+    print(
+        f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)"
+    )
     return path
 
 
@@ -77,12 +83,14 @@ def generate_small_photo(filename="small_photo.jpg"):
     # Add a simple "object" — circle in center
     for y in range(300):
         for x in range(300):
-            if (x - 150) ** 2 + (y - 150) ** 2 < 80 ** 2:
+            if (x - 150) ** 2 + (y - 150) ** 2 < 80**2:
                 arr[y, x] = [200, 50, 50]
     img = Image.fromarray(arr)
     path = os.path.join(IMAGES_DIR, filename)
     img.save(path, "JPEG", quality=85)
-    print(f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)")
+    print(
+        f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)"
+    )
     return path
 
 
@@ -141,7 +149,9 @@ def generate_receipt(filename="receipt.png"):
 
     path = os.path.join(IMAGES_DIR, filename)
     img.save(path, "PNG")
-    print(f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)")
+    print(
+        f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)"
+    )
     return path
 
 
@@ -152,7 +162,9 @@ def generate_already_optimized(filename="already_optimized.jpg"):
     img = Image.fromarray(arr)
     path = os.path.join(IMAGES_DIR, filename)
     img.save(path, "JPEG", quality=80)
-    print(f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)")
+    print(
+        f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)"
+    )
     return path
 
 
@@ -177,7 +189,10 @@ def generate_large_png_screenshot(filename="large_screenshot.png"):
         y_start = 80 + row * 110
         for line in range(4):
             line_width = random.randint(400, 900)
-            draw.rectangle([280, y_start + line * 22, 280 + line_width, y_start + line * 22 + 14], fill=(40, 40, 40))
+            draw.rectangle(
+                [280, y_start + line * 22, 280 + line_width, y_start + line * 22 + 14],
+                fill=(40, 40, 40),
+            )
 
     # Some colored cards
     colors = [(66, 133, 244), (52, 168, 83), (234, 67, 53), (251, 188, 4)]
@@ -187,7 +202,9 @@ def generate_large_png_screenshot(filename="large_screenshot.png"):
 
     path = os.path.join(IMAGES_DIR, filename)
     img.save(path, "PNG")
-    print(f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)")
+    print(
+        f"  Created: {filename} ({img.size[0]}x{img.size[1]}, {os.path.getsize(path) / 1024:.0f}KB)"
+    )
     return path
 
 

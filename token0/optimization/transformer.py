@@ -6,8 +6,8 @@ import io
 import easyocr
 from PIL import Image
 
-from src.optimization.analyzer import ImageAnalysis
-from src.optimization.router import OptimizationPlan
+from token0.optimization.analyzer import ImageAnalysis
+from token0.optimization.router import OptimizationPlan
 
 # Lazy-loaded EasyOCR reader
 _ocr_reader = None

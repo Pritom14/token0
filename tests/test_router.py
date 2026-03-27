@@ -1,7 +1,7 @@
 """Tests for src/optimization/router.py"""
 
-from src.optimization.analyzer import ImageAnalysis
-from src.optimization.router import (
+from token0.optimization.analyzer import ImageAnalysis
+from token0.optimization.router import (
     get_provider_from_model,
     plan_optimization,
 )
@@ -16,7 +16,7 @@ def _make_analysis(
     has_transparency=False,
 ) -> ImageAnalysis:
     """Helper to create an ImageAnalysis with sensible defaults."""
-    from src.optimization.analyzer import estimate_anthropic_tokens, estimate_openai_tokens
+    from token0.optimization.analyzer import estimate_anthropic_tokens, estimate_openai_tokens
 
     return ImageAnalysis(
         width=width,
