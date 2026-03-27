@@ -5,10 +5,10 @@ import io
 
 from PIL import Image
 
-from src.optimization.analyzer import ImageAnalysis, analyze_image
-from src.optimization.router import OptimizationPlan
-from src.optimization.transformer import transform_image
 from tests.conftest import make_image, make_text_image
+from token0.optimization.analyzer import ImageAnalysis, analyze_image
+from token0.optimization.router import OptimizationPlan
+from token0.optimization.transformer import transform_image
 
 
 def _make_analysis_and_image(width=800, height=600, fmt="JPEG", mode="RGB", color="red"):

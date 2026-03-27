@@ -169,14 +169,13 @@ Token0 includes **86 unit tests** and benchmarks across multiple suites:
 
 ## Quick Start
 
-### Try It (zero external dependencies)
+### Install
 
 ```bash
-git clone <repo-url> && cd token0
-python -m venv .venv && source .venv/bin/activate
-pip install -e .
-cp .env.example .env
+pip install token0
 ```
+
+Create a `.env` file with your API key:
 
 Add your LLM provider API key to `.env`:
 ```bash
@@ -271,7 +270,7 @@ curl http://localhost:8000/v1/usage
 ### Run Benchmarks Yourself
 
 ```bash
-pip install -e ".[dev]"
+pip install token0[dev]
 ollama pull moondream
 
 # Run all suites
@@ -303,7 +302,7 @@ This starts PostgreSQL, Redis, MinIO, and the Token0 API server in one command.
 ### Option B: Manual
 
 ```bash
-pip install -e ".[full]"
+pip install token0[full]
 ```
 
 Set these in `.env`:
@@ -326,7 +325,7 @@ S3_BUCKET=token0-images
 | Database | SQLite | PostgreSQL |
 | Cache | In-memory dict | Redis |
 | Object storage | Local filesystem | S3 / MinIO |
-| Install | `pip install -e .` | `pip install -e ".[full]"` |
+| Install | `pip install token0` | `pip install token0[full]` |
 | Use case | Dev / testing | Production |
 | Switch via | `STORAGE_MODE=lite` | `STORAGE_MODE=full` |
 

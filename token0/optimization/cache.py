@@ -11,7 +11,7 @@ import json
 
 from PIL import Image
 
-from src.storage.redis import get_redis
+from token0.storage.redis import get_redis
 
 
 def _image_hash(pil_image: Image.Image, hash_size: int = 16) -> str:

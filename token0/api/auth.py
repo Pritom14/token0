@@ -5,7 +5,7 @@ import hashlib
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 
-from src.config import settings
+from token0.config import settings
 
 api_key_header = APIKeyHeader(name="X-Token0-Key", auto_error=False)
 

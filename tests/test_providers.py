@@ -1,6 +1,6 @@
 """Tests for provider adapters — message format conversion and pricing."""
 
-from src.providers.base import MODEL_PRICING, get_cost_per_token
+from token0.providers.base import MODEL_PRICING, get_cost_per_token
 
 
 class TestPricing:

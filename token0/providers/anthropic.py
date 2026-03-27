@@ -2,7 +2,7 @@
 
 import anthropic
 
-from src.providers.base import BaseProvider, ProviderResponse
+from token0.providers.base import BaseProvider, ProviderResponse
 
 
 class AnthropicProvider(BaseProvider):

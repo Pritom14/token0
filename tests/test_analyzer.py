@@ -2,14 +2,14 @@
 
 from PIL import Image
 
-from src.optimization.analyzer import (
+from tests.conftest import make_text_image
+from token0.optimization.analyzer import (
     analyze_image,
     decode_image,
     detect_text_density,
     estimate_anthropic_tokens,
     estimate_openai_tokens,
 )
-from tests.conftest import make_text_image
 
 
 class TestDecodeImage:

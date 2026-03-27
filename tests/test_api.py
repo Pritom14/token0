@@ -5,16 +5,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from src.main import app
-from src.providers.base import ProviderResponse
-from src.storage.redis import MemoryCache
 from tests.conftest import make_image
+from token0.main import app
+from token0.providers.base import ProviderResponse
+from token0.storage.redis import MemoryCache
 
 
 @pytest.fixture(autouse=True)
 def _init_cache():
     """Initialize in-memory cache for all API tests."""
-    import src.storage.redis as redis_mod
+    import token0.storage.redis as redis_mod
 
     redis_mod.pool = MemoryCache()
 
@@ -58,8 +58,8 @@ class TestHealthEndpoint:
 
 
 class TestChatCompletions:
-    @patch("src.api.v1.chat._get_provider")
-    @patch("src.api.v1.chat.async_session")
+    @patch("token0.api.v1.chat._get_provider")
+    @patch("token0.api.v1.chat.async_session")
     def test_text_only_passthrough(
         self, mock_session, mock_get_provider, client, mock_provider_response
     ):
@@ -88,8 +88,8 @@ class TestChatCompletions:
         assert "token0" in data
         assert data["token0"]["tokens_saved"] == 0  # no images to optimize
 
-    @patch("src.api.v1.chat._get_provider")
-    @patch("src.api.v1.chat.async_session")
+    @patch("token0.api.v1.chat._get_provider")
+    @patch("token0.api.v1.chat.async_session")
     def test_image_message_gets_optimized(
         self, mock_session, mock_get_provider, client, mock_provider_response
     ):
@@ -125,8 +125,8 @@ class TestChatCompletions:
         assert data["token0"]["tokens_saved"] >= 0
         assert len(data["token0"]["optimizations_applied"]) > 0
 
-    @patch("src.api.v1.chat._get_provider")
-    @patch("src.api.v1.chat.async_session")
+    @patch("token0.api.v1.chat._get_provider")
+    @patch("token0.api.v1.chat.async_session")
     def test_optimization_disabled(
         self, mock_session, mock_get_provider, client, mock_provider_response
     ):
@@ -161,8 +161,8 @@ class TestChatCompletions:
         assert data["token0"]["tokens_saved"] == 0
         assert len(data["token0"]["optimizations_applied"]) == 0
 
-    @patch("src.api.v1.chat._get_provider")
-    @patch("src.api.v1.chat.async_session")
+    @patch("token0.api.v1.chat._get_provider")
+    @patch("token0.api.v1.chat.async_session")
     def test_small_image_low_detail(
         self, mock_session, mock_get_provider, client, mock_provider_response
     ):
@@ -199,8 +199,8 @@ class TestChatCompletions:
         image_part = [p for p in content if p["type"] == "image_url"][0]
         assert image_part["image_url"]["detail"] == "low"
 
-    @patch("src.api.v1.chat._get_provider")
-    @patch("src.api.v1.chat.async_session")
+    @patch("token0.api.v1.chat._get_provider")
+    @patch("token0.api.v1.chat.async_session")
     def test_anthropic_model_routing(
         self, mock_session, mock_get_provider, client, mock_provider_response
     ):
@@ -223,8 +223,8 @@ class TestChatCompletions:
         # Verify _get_provider was called with anthropic
         mock_get_provider.assert_called_with("anthropic", api_key="test-key")
 
-    @patch("src.api.v1.chat._get_provider")
-    @patch("src.api.v1.chat.async_session")
+    @patch("token0.api.v1.chat._get_provider")
+    @patch("token0.api.v1.chat.async_session")
     def test_response_format(self, mock_session, mock_get_provider, client, mock_provider_response):
         """Response should follow OpenAI-compatible format with token0 extras."""
         mock_provider = AsyncMock()
@@ -265,7 +265,7 @@ class TestChatCompletions:
     def test_missing_provider_key_returns_400(self, client):
         """Should error if no provider key is available."""
         # Clear any default keys
-        with patch("src.api.v1.chat.settings") as mock_settings:
+        with patch("token0.api.v1.chat.settings") as mock_settings:
             mock_settings.openai_api_key = ""
             mock_settings.anthropic_api_key = ""
             mock_settings.google_api_key = ""
@@ -282,8 +282,8 @@ class TestChatCompletions:
 
 
 class TestMultipleImages:
-    @patch("src.api.v1.chat._get_provider")
-    @patch("src.api.v1.chat.async_session")
+    @patch("token0.api.v1.chat._get_provider")
+    @patch("token0.api.v1.chat.async_session")
     def test_multiple_images_all_optimized(
         self, mock_session, mock_get_provider, client, mock_provider_response
     ):

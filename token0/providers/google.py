@@ -5,7 +5,7 @@ import base64
 from google import genai
 from google.genai import types
 
-from src.providers.base import BaseProvider, ProviderResponse
+from token0.providers.base import BaseProvider, ProviderResponse
 
 
 class GoogleProvider(BaseProvider):

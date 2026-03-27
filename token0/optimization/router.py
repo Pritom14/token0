@@ -3,7 +3,7 @@
 import math
 from dataclasses import dataclass
 
-from src.optimization.analyzer import ImageAnalysis
+from token0.optimization.analyzer import ImageAnalysis
 
 
 @dataclass
@@ -124,7 +124,7 @@ def plan_optimization(
         prompt_detail: Result from prompt classifier ('low', 'high', 'auto')
         enable_cascade: Whether to suggest cheaper models for simple tasks
     """
-    from src.config import settings
+    from token0.config import settings
 
     provider = get_provider_from_model(model)
     plan = OptimizationPlan()
@@ -162,7 +162,7 @@ def plan_optimization(
         opt_w, opt_h = _tile_optimized_resize(analysis.width, analysis.height)
         # Check if tile-optimized resize saves tiles
         current_tokens = _estimate_tokens(analysis, provider, "high")
-        from src.optimization.analyzer import estimate_openai_tokens
+        from token0.optimization.analyzer import estimate_openai_tokens
 
         optimized_tokens = estimate_openai_tokens(opt_w, opt_h, "high")
 
@@ -231,7 +231,7 @@ def _estimate_tokens(analysis: ImageAnalysis, provider: str, detail: str = "high
 
 
 def _estimate_tokens_for_dims(width: int, height: int, provider: str) -> int:
-    from src.optimization.analyzer import estimate_anthropic_tokens, estimate_openai_tokens
+    from token0.optimization.analyzer import estimate_anthropic_tokens, estimate_openai_tokens
 
     if provider == "openai":
         return estimate_openai_tokens(width, height, "high")

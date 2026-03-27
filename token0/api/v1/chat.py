@@ -5,9 +5,9 @@ import uuid
 
 from fastapi import APIRouter, Header, HTTPException
 
-from src.config import settings
-from src.models.db import Request
-from src.models.request import (
+from token0.config import settings
+from token0.models.db import Request
+from token0.models.request import (
     ChatRequest,
     ChatResponse,
     Choice,
@@ -15,16 +15,16 @@ from src.models.request import (
     Token0Usage,
     UsageInfo,
 )
-from src.optimization.analyzer import analyze_image
-from src.optimization.cache import get_cached_response, make_cache_key, set_cached_response
-from src.optimization.prompt_classifier import classify_prompt_detail, extract_prompt_text
-from src.optimization.router import OptimizationPlan, get_provider_from_model, plan_optimization
-from src.optimization.transformer import transform_image
-from src.providers.anthropic import AnthropicProvider
-from src.providers.base import BaseProvider, get_cost_per_token
-from src.providers.google import GoogleProvider
-from src.providers.openai import OpenAIProvider
-from src.storage.postgres import async_session
+from token0.optimization.analyzer import analyze_image
+from token0.optimization.cache import get_cached_response, make_cache_key, set_cached_response
+from token0.optimization.prompt_classifier import classify_prompt_detail, extract_prompt_text
+from token0.optimization.router import OptimizationPlan, get_provider_from_model, plan_optimization
+from token0.optimization.transformer import transform_image
+from token0.providers.anthropic import AnthropicProvider
+from token0.providers.base import BaseProvider, get_cost_per_token
+from token0.providers.google import GoogleProvider
+from token0.providers.openai import OpenAIProvider
+from token0.storage.postgres import async_session
 
 router = APIRouter()
 

@@ -3,11 +3,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.api.v1.chat import router as chat_router
-from src.api.v1.usage import router as usage_router
-from src.config import settings
-from src.storage.postgres import close_db, init_db
-from src.storage.redis import close_redis, init_redis
+from token0.api.v1.chat import router as chat_router
+from token0.api.v1.usage import router as usage_router
+from token0.config import settings
+from token0.storage.postgres import close_db, init_db
+from token0.storage.redis import close_redis, init_redis
 
 logger = logging.getLogger("token0")
 
