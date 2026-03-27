@@ -2,8 +2,10 @@
 
 import pytest
 
-from tests.conftest import make_image, make_text_image
-from token0.litellm_hook import Token0Hook, _optimize_messages
+litellm = pytest.importorskip("litellm", reason="litellm not installed")
+
+from tests.conftest import make_image, make_text_image  # noqa: E402
+from token0.litellm_hook import Token0Hook, _optimize_messages  # noqa: E402
 
 
 class TestOptimizeMessages:

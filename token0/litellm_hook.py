@@ -14,7 +14,12 @@ Or programmatically:
 
 import logging
 
-from litellm.integrations.custom_logger import CustomLogger
+try:
+    from litellm.integrations.custom_logger import CustomLogger
+except ImportError:
+    raise ImportError(
+        "litellm is required for the Token0Hook integration. Install it with: pip install litellm"
+    )
 
 from token0.optimization.analyzer import analyze_image
 from token0.optimization.router import plan_optimization
