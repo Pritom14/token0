@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     google_api_key: str = ""
+    ollama_base_url: str = "http://localhost:11434/v1"
 
     # Server
     host: str = "0.0.0.0"
