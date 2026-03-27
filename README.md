@@ -115,10 +115,10 @@ We benchmarked Token0 against **4 vision models** on **5 real-world images** (no
 
 | Model | Params | Total Direct | Total Token0 | Savings |
 |---|---|---|---|---|
-| moondream | 1.7B | 3,759 | 2,395 | **36.3%** |
-| llava-llama3 | 8B | 3,011 | 2,071 | **31.2%** |
-| minicpm-v | 8B | 3,027 | 2,243 | **25.9%** |
-| llava:7b | 7B | 3,020 | 2,290 | **24.2%** |
+| minicpm-v | 8B | 10,877 | 6,276 | **42.3%** |
+| moondream | 1.7B | 16,457 | 10,240 | **37.8%** |
+| llava-llama3 | 8B | 13,365 | 8,486 | **36.5%** |
+| llava:7b | 7B | 13,384 | 8,701 | **35.0%** |
 
 ### GPT-4o Cost Projections (v1 vs v2)
 
@@ -154,7 +154,7 @@ Using OpenAI's published token formulas on real images:
 
 ### Additional Test Coverage
 
-Token0 includes **86 unit tests** and benchmarks across multiple suites:
+Token0 includes **93 unit tests** and benchmarks across multiple suites:
 
 | Suite | Tests | What It Validates |
 |---|---|---|
@@ -164,6 +164,7 @@ Token0 includes **86 unit tests** and benchmarks across multiple suites:
 | `turns` | 2 | Multi-turn conversations: image history optimization |
 | `tasks` | 4 | Task types: classification, description, extraction, Q&A |
 | `real` | 5 | Real-world photos, receipts, invoices, screenshots |
+| `streaming` | 7 | SSE streaming: format, content, stats, image optimization |
 
 ---
 
@@ -230,6 +231,30 @@ response = client.chat.completions.create(
 # response.token0.tokens_saved = 1305
 # response.token0.cost_saved_usd = 0.003263
 # response.token0.optimizations_applied = ["resize 4000x3000 → 1568x1176", "convert png → jpeg q=85"]
+```
+
+### Streaming Support
+
+Token0 supports `stream=true` — images are optimized before streaming begins, then tokens flow word-by-word via SSE:
+
+```python
+stream = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "Describe this image"},
+            {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
+        ]
+    }],
+    stream=True,
+    extra_headers={"X-Provider-Key": "sk-..."}
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="")
+# Final chunk includes token0 optimization stats
 ```
 
 ### Use With Ollama (free, fully local)
@@ -337,7 +362,7 @@ S3_BUCKET=token0-images
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/v1/chat/completions` | Optimized chat completion (OpenAI-compatible) |
+| POST | `/v1/chat/completions` | Optimized chat completion (OpenAI-compatible, supports `stream=true`) |
 | GET | `/v1/usage` | Usage and savings dashboard |
 | GET | `/health` | Health check + storage mode |
 

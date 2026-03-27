@@ -15,7 +15,10 @@ build/
 *.sqlite3
 .token0_images/
 benchmarks/images/real/screenshot_real.png
+benchmarks/results/
+*.db-journal
 .DS_Store
 .idea/
 .vscode/
 CLAUDE.md
+marketing/

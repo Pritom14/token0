@@ -40,6 +40,19 @@ def get_provider_from_model(model: str) -> str:
         return "anthropic"
     if any(k in model_lower for k in ("gemini", "palm")):
         return "google"
+    # Known Ollama/local models
+    ollama_models = (
+        "moondream",
+        "llava",
+        "minicpm",
+        "bakllava",
+        "cogvlm",
+        "yi-vl",
+        "llava-phi",
+        "nanollava",
+    )
+    if any(k in model_lower for k in ollama_models):
+        return "ollama"
     return "openai"  # default
 
 

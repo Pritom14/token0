@@ -1,6 +1,7 @@
 """Base provider interface — all LLM adapters implement this."""
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
 
@@ -13,6 +14,15 @@ class ProviderResponse:
     total_tokens: int
     finish_reason: str | None = None
     raw_response: dict | None = None
+
+
+@dataclass
+class StreamChunk:
+    delta_content: str | None = None
+    finish_reason: str | None = None
+    model: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
 
 
 # Per-million-token pricing (USD). Input/output.
@@ -59,3 +69,23 @@ class BaseProvider(ABC):
     ) -> ProviderResponse:
         """Send a chat completion request to the provider."""
         ...
+
+    async def stream_chat_completion(
+        self,
+        model: str,
+        messages: list[dict],
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+    ) -> AsyncIterator[StreamChunk]:
+        """Stream a chat completion. Override per provider."""
+        # Default: fall back to non-streaming and yield as single chunk
+        response = await self.chat_completion(model, messages, max_tokens, temperature)
+        yield StreamChunk(
+            delta_content=response.content,
+            finish_reason=response.finish_reason,
+            model=response.model,
+            prompt_tokens=response.prompt_tokens,
+            completion_tokens=response.completion_tokens,
+        )
+        # Make this a proper async generator
+        return  # noqa: B901

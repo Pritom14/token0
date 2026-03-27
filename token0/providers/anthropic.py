@@ -1,22 +1,18 @@
 """Anthropic (Claude) provider adapter."""
 
+from collections.abc import AsyncIterator
+
 import anthropic
 
-from token0.providers.base import BaseProvider, ProviderResponse
+from token0.providers.base import BaseProvider, ProviderResponse, StreamChunk
 
 
 class AnthropicProvider(BaseProvider):
     def __init__(self, api_key: str):
         self.client = anthropic.AsyncAnthropic(api_key=api_key)
 
-    async def chat_completion(
-        self,
-        model: str,
-        messages: list[dict],
-        max_tokens: int | None = None,
-        temperature: float | None = None,
-    ) -> ProviderResponse:
-        # Convert from OpenAI message format to Anthropic format
+    def _convert_messages(self, messages: list[dict]) -> tuple[str | None, list[dict]]:
+        """Convert OpenAI message format to Anthropic format."""
         system_prompt = None
         anthropic_messages = []
 
@@ -25,7 +21,6 @@ class AnthropicProvider(BaseProvider):
                 system_prompt = msg["content"] if isinstance(msg["content"], str) else ""
                 continue
 
-            # Convert content format
             if isinstance(msg["content"], str):
                 anthropic_messages.append({"role": msg["role"], "content": msg["content"]})
             elif isinstance(msg["content"], list):
@@ -34,10 +29,8 @@ class AnthropicProvider(BaseProvider):
                     if part["type"] == "text":
                         content_blocks.append({"type": "text", "text": part["text"]})
                     elif part["type"] == "image_url":
-                        # Convert OpenAI image_url format to Anthropic source format
                         url = part["image_url"]["url"]
                         if url.startswith("data:"):
-                            # Parse data URI: data:image/jpeg;base64,/9j/...
                             header, b64_data = url.split(",", 1)
                             media_type = header.split(":")[1].split(";")[0]
                             content_blocks.append(
@@ -50,7 +43,6 @@ class AnthropicProvider(BaseProvider):
                                     },
                                 }
                             )
-                        # Token0 internal format (already processed)
                         elif "base64" in part.get("image_url", {}):
                             content_blocks.append(
                                 {
@@ -66,6 +58,16 @@ class AnthropicProvider(BaseProvider):
                             )
                 anthropic_messages.append({"role": msg["role"], "content": content_blocks})
 
+        return system_prompt, anthropic_messages
+
+    def _build_kwargs(
+        self,
+        model: str,
+        anthropic_messages: list[dict],
+        system_prompt: str | None,
+        max_tokens: int | None,
+        temperature: float | None,
+    ) -> dict:
         kwargs = {
             "model": model,
             "messages": anthropic_messages,
@@ -75,6 +77,19 @@ class AnthropicProvider(BaseProvider):
             kwargs["system"] = system_prompt
         if temperature is not None:
             kwargs["temperature"] = temperature
+        return kwargs
+
+    async def chat_completion(
+        self,
+        model: str,
+        messages: list[dict],
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+    ) -> ProviderResponse:
+        system_prompt, anthropic_messages = self._convert_messages(messages)
+        kwargs = self._build_kwargs(
+            model, anthropic_messages, system_prompt, max_tokens, temperature
+        )
 
         response = await self.client.messages.create(**kwargs)
 
@@ -92,3 +107,28 @@ class AnthropicProvider(BaseProvider):
             finish_reason=response.stop_reason,
             raw_response=response.model_dump(),
         )
+
+    async def stream_chat_completion(
+        self,
+        model: str,
+        messages: list[dict],
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+    ) -> AsyncIterator[StreamChunk]:
+        system_prompt, anthropic_messages = self._convert_messages(messages)
+        kwargs = self._build_kwargs(
+            model, anthropic_messages, system_prompt, max_tokens, temperature
+        )
+
+        async with self.client.messages.stream(**kwargs) as stream:
+            async for text in stream.text_stream:
+                yield StreamChunk(delta_content=text, model=model)
+
+            # Final message has usage info
+            final = await stream.get_final_message()
+            yield StreamChunk(
+                finish_reason=final.stop_reason,
+                model=final.model,
+                prompt_tokens=final.usage.input_tokens,
+                completion_tokens=final.usage.output_tokens,
+            )
