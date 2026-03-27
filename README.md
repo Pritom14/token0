@@ -154,7 +154,7 @@ Using OpenAI's published token formulas on real images:
 
 ### Additional Test Coverage
 
-Token0 includes **93 unit tests** and benchmarks across multiple suites:
+Token0 includes **103 unit tests** and benchmarks across multiple suites:
 
 | Suite | Tests | What It Validates |
 |---|---|---|
@@ -165,6 +165,7 @@ Token0 includes **93 unit tests** and benchmarks across multiple suites:
 | `tasks` | 4 | Task types: classification, description, extraction, Q&A |
 | `real` | 5 | Real-world photos, receipts, invoices, screenshots |
 | `streaming` | 7 | SSE streaming: format, content, stats, image optimization |
+| `litellm` | 10 | LiteLLM hook: passthrough, optimization, OCR, cascade, async |
 
 ---
 
@@ -255,6 +256,39 @@ for chunk in stream:
     if chunk.choices[0].delta.content:
         print(chunk.choices[0].delta.content, end="")
 # Final chunk includes token0 optimization stats
+```
+
+### Use With LiteLLM
+
+Already using [LiteLLM](https://github.com/BerriAI/litellm)? Add Token0 as a callback hook — no proxy needed:
+
+```python
+import litellm
+from token0.litellm_hook import Token0Hook
+
+litellm.callbacks = [Token0Hook()]
+
+# All your existing litellm calls now get image optimization for free
+response = litellm.completion(
+    model="gpt-4o",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What's in this image?"},
+            {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
+        ]
+    }]
+)
+
+# Stats available in response metadata
+# response._hidden_params["metadata"]["token0"]["tokens_saved"]
+```
+
+Or in LiteLLM proxy `config.yaml`:
+
+```yaml
+litellm_settings:
+  callbacks: ["token0.litellm_hook.Token0Hook"]
 ```
 
 ### Use With Ollama (free, fully local)
