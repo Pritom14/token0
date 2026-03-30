@@ -33,7 +33,7 @@ except ImportError:
     BaseCallbackHandler = object  # type: ignore[assignment,misc]
     BaseMessage = object  # type: ignore[assignment]
 
-from token0.litellm_hook import _optimize_messages
+from token0.optimization.message_optimizer import optimize_messages
 
 logger = logging.getLogger("token0.langchain")
 
@@ -98,7 +98,7 @@ class Token0Callback(BaseCallbackHandler):
                 # Wrap in the dict format _optimize_messages expects
                 msg_dicts = [{"role": _role_for(message), "content": message.content}]
 
-                optimized_dicts, stats = _optimize_messages(
+                optimized_dicts, stats = optimize_messages(
                     msg_dicts,
                     model,
                     detail_override=self.detail_override,
