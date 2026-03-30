@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from token0.api.v1.chat import router as chat_router
+from token0.api.v1.estimate import router as estimate_router
 from token0.api.v1.usage import router as usage_router
 from token0.config import settings
 from token0.storage.postgres import close_db, init_db
@@ -40,6 +41,7 @@ app = FastAPI(
 )
 
 app.include_router(chat_router, prefix="/v1")
+app.include_router(estimate_router, prefix="/v1")
 app.include_router(usage_router, prefix="/v1")
 
 

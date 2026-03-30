@@ -1,6 +1,6 @@
 [project]
 name = "token0"
-version = "0.3.0"
+version = "0.3.1"
 description = "Open-source API proxy that makes vision LLM calls 5-10x cheaper"
 readme = "README.md"
 license = "Apache-2.0"
@@ -21,9 +21,13 @@ dependencies = [
     "anthropic>=0.40.0",
     "openai>=1.50.0",
     "google-genai>=1.0.0",
+    "pypdf>=4.0.0",
 ]
 
 [project.optional-dependencies]
+langchain = [
+    "langchain-core>=0.2.0",
+]
 full = [
     "asyncpg>=0.30.0",
     "redis>=5.0.0",
@@ -35,6 +39,7 @@ dev = [
     "pytest-cov>=6.0.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
+    "langchain-core>=0.2.0",
 ]
 
 [project.scripts]

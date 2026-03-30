@@ -8,12 +8,13 @@ Send images to LLMs through Token0. Same accuracy. Fraction of the cost.
 
 ## Why Token0 Exists
 
-Every time you send an image to GPT-4o, Claude, or Gemini, you're paying for **vision tokens** — and most of them are wasted.
+Every time you send an image to GPT-4.1, Claude, or Gemini, you're paying for **vision tokens** — and most of them are wasted.
 
 - A 4000x3000 photo costs **~1,590 tokens** on Claude. The model auto-downscales it to 1568px internally — you paid for pixels that got thrown away.
-- A screenshot of a document costs **~765 tokens** on GPT-4o as an image. The same information extracted as text costs **~30 tokens**. That's a **25x markup** for the same answer.
-- A simple "classify this image" prompt on GPT-4o uses high-detail mode at **1,105 tokens**. Low-detail mode gives the same answer for **85 tokens** — 13x cheaper.
-- A 1280x720 image on GPT-4o creates 4 tiles (765 tokens). Resizing to tile boundaries gives 2 tiles (425 tokens) — 44% cheaper with zero quality loss.
+- A screenshot of a document costs **~765 tokens** on GPT-4.1 as an image. The same information extracted as text costs **~30 tokens**. That's a **25x markup** for the same answer.
+- A simple "classify this image" prompt on GPT-4.1 uses high-detail mode at **1,105 tokens**. Low-detail mode gives the same answer for **85 tokens** — 13x cheaper.
+- A 1280x720 image on GPT-4.1 creates 4 tiles (765 tokens). Resizing to tile boundaries gives 2 tiles (425 tokens) — 44% cheaper with zero quality loss.
+- A PDF invoice sent as an image costs ~765 tokens. Extracting its text layer costs ~50 tokens — a **15x markup** for the same data.
 
 **The problem**: Text token optimization is mature (prompt caching, compression, smart routing). But for images — the modality that costs 2-5x more per token — almost **no optimization tooling exists**.
 
@@ -29,29 +30,31 @@ Your App → Token0 Proxy → [Analyze → Classify → Route → Transform → 
          Database (logs every optimization decision + savings)
 ```
 
-Token0 applies **9 optimizations** automatically:
+Token0 applies **10 optimizations** automatically:
 
 ### Core Optimizations (Free Tier)
 
-**1. Smart Resize** — Auto-downscale images to the max resolution each model actually processes (Claude: 1568px, GPT-4o: 2048px). Most apps send 4000px images that get silently downscaled by the provider.
+**1. Smart Resize** — Auto-downscale images to the max resolution each model actually processes (Claude: 1568px, GPT-4.1: 2048px). Most apps send 4000px images that get silently downscaled by the provider.
 
 **2. OCR Routing** — Detect when an image is mostly text (screenshots, documents, invoices, receipts) and extract text via OCR instead. Text tokens cost 10-50x less than vision tokens. Uses a multi-signal heuristic (background uniformity, color variance, horizontal line structure, edge density) — validated at 91% accuracy on real-world images.
 
-**3. JPEG Recompression** — Convert PNG screenshots (large files) to optimized JPEG (smaller payload, faster upload) when transparency isn't needed.
+**3. PDF Text Layer Extraction** — When a PDF is sent as a content part, extract its text layer using `pypdf` instead of rendering as an image. Typed/digital PDFs almost always have a text layer. A 2-page invoice PDF: ~1,530 vision tokens → ~80 text tokens. Falls back to passthrough for scanned PDFs with no text layer.
+
+**4. JPEG Recompression** — Convert PNG screenshots (large files) to optimized JPEG (smaller payload, faster upload) when transparency isn't needed.
 
 ### Advanced Optimizations
 
-**4. Prompt-Aware Detail Mode** — Analyze the *prompt* to decide detail level, not just the image. "Classify this image" → low detail (85 tokens). "Extract all text" → high detail. A keyword classifier on the prompt text can cut costs 3-13x per image.
+**5. Prompt-Aware Detail Mode** — Analyze the *prompt* to decide detail level, not just the image. "Classify this image" → low detail (85 tokens). "Extract all text" → high detail. A keyword classifier on the prompt text can cut costs 3-13x per image.
 
-**5. Tile-Optimized Resize** — OpenAI tiles images into 512x512 blocks. A 1280x720 image creates 4 tiles (765 tokens). Token0 resizes to optimal tile boundaries: 2 tiles (425 tokens) — 44% savings with zero quality loss.
+**6. Tile-Optimized Resize** — OpenAI tiles images into 512x512 blocks. A 1280x720 image creates 4 tiles (765 tokens). Token0 resizes to optimal tile boundaries: 2 tiles (425 tokens) — 44% savings with zero quality loss.
 
-**6. Model Cascade** — Not all images need GPT-4o. Token0 auto-routes simple tasks to cheaper models: GPT-4o → GPT-4o-mini (16.7x cheaper), Claude Opus → Claude Haiku (6.25x cheaper). Complex tasks stay on the flagship model.
+**7. Model Cascade** — Not all images need GPT-4.1. Token0 auto-routes simple tasks to cheaper models: GPT-4.1 → GPT-4.1-mini (5x cheaper) → GPT-4.1-nano (20x cheaper), Claude Opus → Claude Haiku (6.25x cheaper). Complex tasks stay on the flagship model.
 
-**7. Semantic Response Cache** — Cache responses for similar image+prompt pairs using perceptual image hashing. Repeated or similar queries cost 0 tokens. Effective on repetitive workloads (product classification, document processing).
+**8. Semantic Response Cache** — Cache responses for similar image+prompt pairs using perceptual image hashing. Repeated or similar queries cost 0 tokens. Effective on repetitive workloads (product classification, document processing).
 
-**8. QJL-Compressed Fuzzy Cache** — Similar (not just identical) images hit the cache using Quantized Johnson-Lindenstrauss random projection. Compresses 256-bit perceptual hashes to 128-bit binary signatures, matches via Hamming distance. Inspired by Google's TurboQuant (arXiv 2504.19874). **62% additional token savings** on image variations in benchmarks — similar product photos, re-scanned documents, and slightly different angles all hit cache.
+**9. QJL-Compressed Fuzzy Cache** — Similar (not just identical) images hit the cache using Quantized Johnson-Lindenstrauss random projection. Compresses 256-bit perceptual hashes to 128-bit binary signatures, matches via Hamming distance. Inspired by Google's TurboQuant (arXiv 2504.19874). **62% additional token savings** on image variations in benchmarks — similar product photos, re-scanned documents, and slightly different angles all hit cache.
 
-**9. Video Optimization** — Automatically extract keyframes from video at 1fps, deduplicate similar consecutive frames using QJL perceptual hashing, detect scene changes via pixel-level diff, and run each keyframe through the full image optimization pipeline. A 60-second video at 30fps (1,800 frames) reduces to ~10 keyframes before being sent to the LLM. **13-45% savings on local models; ~83% projected savings on GPT-4o.** Optional CLIP-based query-frame scoring (Layer 2) ranks frames by relevance to the user's prompt.
+**10. Video Optimization** — Automatically extract keyframes from video at 1fps, deduplicate similar consecutive frames using QJL perceptual hashing, detect scene changes via pixel-level diff, and run each keyframe through the full image optimization pipeline. A 60-second video at 30fps (1,800 frames) reduces to ~10 keyframes before being sent to the LLM. **13-45% savings on local models; ~83% projected savings on GPT-4.1.** Optional CLIP-based query-frame scoring (Layer 2) ranks frames by relevance to the user's prompt.
 
 ---
 
@@ -143,63 +146,64 @@ Test setup: 3 videos (product showcase, document montage, mixed content), naive 
 
 **Why moondream shows less video savings:** moondream uses a very small frame encoder — its per-frame token cost is already low, so frame dedup has less absolute impact than on higher-token models.
 
-### GPT-4o Video Extrapolation (ballpark)
+### GPT-4.1 Video Extrapolation (ballpark)
 
-Using OpenAI's published tile formula (512px tiles, 170 tokens/tile):
+Using OpenAI's published tile formula (512px tiles, 170 tokens/tile) and GPT-4.1 pricing ($2.00/1M tokens):
 
 | Scenario | Naive | Token0 | Savings |
 |---|---|---|---|
 | 60s video, 30fps (1,800 frames → 1fps → 60 frames → dedup to ~10) | ~25,500 tokens | ~4,250 tokens | **~83%** |
-| Monthly cost at 10K videos/day (GPT-4o $2.50/1M tokens) | $19,125/mo | $3,188/mo | **$15,938/mo saved** |
+| Monthly cost at 10K videos/day | $15,300/mo | $2,550/mo | **$12,750/mo saved** |
 
 ### Anthropic Video Extrapolation (ballpark)
 
-Using Anthropic's pixel formula (tokens ≈ width × height / 750):
+Using Anthropic's pixel formula (tokens ≈ width × height / 750) and Claude Sonnet pricing ($3/1M tokens):
 
 | Scenario | Naive | Token0 | Savings |
 |---|---|---|---|
 | 60s video, 1fps = 60 frames at 1280×720 | ~73,700 tokens | ~12,300 tokens | **~83%** |
-| Monthly cost at 1K videos/day (Claude Sonnet $3/1M tokens) | $6,633/mo | $1,107/mo | **$5,526/mo saved** |
+| Monthly cost at 1K videos/day | $6,633/mo | $1,107/mo | **$5,526/mo saved** |
 
 > These are linear extrapolations from the token formula + observed dedup ratios (60 frames → ~10 keyframes). Actual savings vary by content type — talking-head video deduplicates more aggressively than action scenes.
 
-### GPT-4o Image Cost Projections (v1 vs v2)
+### GPT-4.1 Image Cost Projections (v1 vs v2)
 
-Using OpenAI's published token formulas on real images:
+Using OpenAI's published token formulas on real images and GPT-4.1 pricing ($2.00/1M input tokens):
 
 | Optimization Level | Per-Image Cost | Savings | 100K imgs/day Monthly |
 |---|---|---|---|
-| Direct GPT-4o (no Token0) | $0.002253 | — | $6,758 |
-| **Token0 v1** (resize + OCR + basic detail) | $0.000669 | **70.3%** | $2,006 |
-| **Token0 v2** (+ prompt-aware + tile resize + cascade) | $0.000025 | **98.9%** | $74 |
+| Direct GPT-4.1 (no Token0) | $0.001802 | — | $5,406 |
+| **Token0 v1** (resize + OCR + PDF + basic detail) | $0.000535 | **70.3%** | $1,604 |
+| **Token0 v2** (+ prompt-aware + tile resize + cascade) | $0.000020 | **98.9%** | $59 |
 
 **v2 monthly savings at scale:**
 
 | Scale | Direct Cost | Token0 v2 Cost | Monthly Savings |
 |---|---|---|---|
-| 1K images/day | $67.58 | $0.74 | **$66.83** |
-| 10K images/day | $675.75 | $7.45 | **$668.30** |
-| 100K images/day | $6,757.50 | $74.47 | **$6,683.03** |
-| 500K images/day | $33,787.50 | $372.38 | **$33,415.12** |
+| 1K images/day | $54.05 | $0.59 | **$53.46** |
+| 10K images/day | $540.54 | $5.94 | **$534.60** |
+| 100K images/day | $5,406 | $59.46 | **$5,346** |
+| 500K images/day | $27,032 | $297 | **$26,735** |
 
-> **Note**: v2 projections include model cascade (simple tasks → GPT-4o-mini at $0.15/1M tokens vs GPT-4o at $2.50/1M). Semantic cache hits (est. 20% on repetitive workloads) would add further savings on top.
+> **Note**: v2 projections include model cascade (simple tasks → GPT-4.1-mini at $0.40/1M tokens vs GPT-4.1 at $2.00/1M). Semantic cache hits (est. 20% on repetitive workloads) would add further savings on top.
 
 ### Key Findings
 
 1. **OCR routing delivers 47-70% token savings** on text-heavy images across all models tested.
-2. **Smart resize saves 1-6 seconds of latency** on large photos — even when local models report flat token counts.
-3. **Photos are never falsely OCR-routed** — the multi-signal text detection heuristic correctly identifies photos vs documents at 91% accuracy.
-4. **Text-only passthrough adds zero overhead** — 0 extra tokens across all text-only tests.
-5. **Prompt-aware detail mode** drops simple queries from 1,105 → 85 tokens (92% savings) on GPT-4o.
-6. **Model cascade** routes simple tasks at 16.7x cheaper rates with equivalent quality.
-7. **Tile-optimized resize** cuts OpenAI costs by 44% on mid-size images (1280x720) with zero quality loss.
-8. **On cloud APIs, total image savings reach 98.9%** when all optimizations are combined with model cascading.
-9. **Video deduplication collapses 60-frame clips to ~10 keyframes** — 13-45% savings on local models, ~83% projected on GPT-4o.
-10. **Model-aware OCR skip is critical** — ultra-efficient encoders like llama3.2-vision use <50 tokens/image; OCR text output would cost more, not less.
+2. **PDF text layer extraction beats OCR** for typed documents — direct text extraction, no OCR model needed, ~15x cheaper than sending as image.
+3. **Smart resize saves 1-6 seconds of latency** on large photos — even when local models report flat token counts.
+4. **Photos are never falsely OCR-routed** — the multi-signal text detection heuristic correctly identifies photos vs documents at 91% accuracy.
+5. **Text-only passthrough adds zero overhead** — 0 extra tokens across all text-only tests.
+6. **Prompt-aware detail mode** drops simple queries from 1,105 → 85 tokens (92% savings) on GPT-4.1.
+7. **Model cascade** routes simple tasks 5-20x cheaper (GPT-4.1 → GPT-4.1-nano) with equivalent quality.
+8. **Tile-optimized resize** cuts OpenAI costs by 44% on mid-size images (1280x720) with zero quality loss.
+9. **On cloud APIs, total image savings reach 98.9%** when all optimizations are combined with model cascading.
+10. **Video deduplication collapses 60-frame clips to ~10 keyframes** — 13-45% savings on local models, ~83% projected on GPT-4.1.
+11. **Model-aware OCR skip is critical** — ultra-efficient encoders like llama3.2-vision use <50 tokens/image; OCR text output would cost more, not less.
 
 ### Additional Test Coverage
 
-Token0 includes **148 unit tests** and benchmarks across multiple suites:
+Token0 includes **171 unit tests** and benchmarks across multiple suites:
 
 | Suite | Tests | What It Validates |
 |---|---|---|
@@ -213,6 +217,9 @@ Token0 includes **148 unit tests** and benchmarks across multiple suites:
 | `litellm` | 10 | LiteLLM hook: passthrough, optimization, OCR, cascade, async |
 | `cache` | 23 | QJL fuzzy cache: perceptual hash, JL compression, Hamming distance, fuzzy match |
 | `video` | 22 | Frame extraction, QJL dedup, scene detection, CLIP scoring, full pipeline |
+| `pdf` | 8 | PDF detection, decode, text extraction, token estimation |
+| `estimate` | 11 | /v1/estimate endpoint: single image, multiple images, remote URL skip, cost calc |
+| `langchain` | 8 | LangChain callback: import, text passthrough, image optimization, role mapping |
 
 ---
 
@@ -223,8 +230,6 @@ Token0 includes **148 unit tests** and benchmarks across multiple suites:
 ```bash
 pip install token0
 ```
-
-Create a `.env` file with your API key:
 
 Add your LLM provider API key to `.env`:
 ```bash
@@ -264,7 +269,7 @@ client = OpenAI(
 
 # Same code, nothing else changes
 response = client.chat.completions.create(
-    model="gpt-4o",  # or claude-sonnet-4-6, gemini-2.5-flash
+    model="gpt-4.1",  # or claude-sonnet-4-6, gemini-2.5-flash
     messages=[{
         "role": "user",
         "content": [
@@ -281,13 +286,74 @@ response = client.chat.completions.create(
 # response.token0.optimizations_applied = ["resize 4000x3000 → 1568x1176", "convert png → jpeg q=85"]
 ```
 
+### Pre-Call Cost Estimate
+
+Check what a request will cost **before** making any LLM call — no API key needed:
+
+```bash
+curl -X POST http://localhost:8000/v1/estimate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4.1",
+    "messages": [{
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "Describe this image"},
+        {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
+      ]
+    }]
+  }'
+```
+
+```json
+{
+    "model": "gpt-4.1",
+    "provider": "openai",
+    "images": [{
+        "original_tokens": 1105,
+        "optimized_tokens": 85,
+        "tokens_saved": 1020,
+        "cost_saved_usd": 0.00204,
+        "optimizations": ["prompt-aware → low detail (simple task)"]
+    }],
+    "total_original_tokens": 1105,
+    "total_optimized_tokens": 85,
+    "total_tokens_saved": 1020,
+    "total_cost_saved_usd": 0.00204
+}
+```
+
+### PDF Support
+
+Send PDFs directly — Token0 extracts the text layer automatically:
+
+```python
+import base64
+
+with open("invoice.pdf", "rb") as f:
+    pdf_b64 = base64.b64encode(f.read()).decode()
+
+response = client.chat.completions.create(
+    model="gpt-4.1",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What is the total amount on this invoice?"},
+            {"type": "image_url", "image_url": {"url": f"data:application/pdf;base64,{pdf_b64}"}}
+        ]
+    }],
+    extra_headers={"X-Provider-Key": "sk-..."}
+)
+# PDF text layer extracted — ~80 tokens instead of ~765 vision tokens
+```
+
 ### Video Support
 
 Send a video URL or base64-encoded video — Token0 automatically extracts keyframes, deduplicates, and optimizes before forwarding:
 
 ```python
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-4.1",
     messages=[{
         "role": "user",
         "content": [
@@ -298,7 +364,7 @@ response = client.chat.completions.create(
     extra_headers={"X-Provider-Key": "sk-..."}
 )
 # 1,800 raw frames → ~10 keyframes → optimized images → LLM
-# response.token0.tokens_saved = 21,250  (~83% on GPT-4o)
+# ~83% savings on GPT-4.1
 ```
 
 ### Streaming Support
@@ -307,7 +373,7 @@ Token0 supports `stream=true` — images are optimized before streaming begins, 
 
 ```python
 stream = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-4.1",
     messages=[{
         "role": "user",
         "content": [
@@ -337,7 +403,7 @@ litellm.callbacks = [Token0Hook()]
 
 # All your existing litellm calls now get image optimization for free
 response = litellm.completion(
-    model="gpt-4o",
+    model="gpt-4.1",
     messages=[{
         "role": "user",
         "content": [
@@ -357,6 +423,29 @@ Or in LiteLLM proxy `config.yaml`:
 litellm_settings:
   callbacks: ["token0.litellm_hook.Token0Hook"]
 ```
+
+### Use With LangChain
+
+Already using LangChain? Add Token0 as a callback to any chat model:
+
+```bash
+pip install token0[langchain]
+```
+
+```python
+from token0.langchain_callback import Token0Callback
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="gpt-4.1", callbacks=[Token0Callback()])
+
+# All calls through this llm now get image optimization automatically
+response = llm.invoke([HumanMessage(content=[
+    {"type": "text", "text": "What's in this image?"},
+    {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
+])])
+```
+
+Works with any LangChain chat model — ChatOpenAI, ChatAnthropic, ChatGoogleGenerativeAI, etc.
 
 ### Use With Ollama (free, fully local)
 
@@ -468,6 +557,7 @@ S3_BUCKET=token0-images
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v1/chat/completions` | Optimized chat completion (OpenAI-compatible, supports `stream=true`) |
+| POST | `/v1/estimate` | Pre-call token cost estimator — no LLM call, no API key needed |
 | GET | `/v1/usage` | Usage and savings dashboard |
 | GET | `/health` | Health check + storage mode |
 
@@ -475,7 +565,7 @@ S3_BUCKET=token0-images
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `X-Provider-Key` | Yes | Your LLM provider API key (OpenAI/Anthropic/Google/Ollama) |
+| `X-Provider-Key` | Yes (chat only) | Your LLM provider API key (OpenAI/Anthropic/Google/Ollama) |
 | `X-Token0-Key` | No | Token0 API key for usage tracking |
 
 ### Token0-Specific Request Parameters
@@ -495,20 +585,20 @@ Standard OpenAI-compatible response with an additional `token0` field:
 {
     "id": "token0-abc123",
     "object": "chat.completion",
-    "model": "gpt-4o-mini",
+    "model": "gpt-4.1-mini",
     "choices": [...],
     "usage": {"prompt_tokens": 85, "completion_tokens": 50, "total_tokens": 135},
     "token0": {
         "original_prompt_tokens_estimate": 1105,
         "optimized_prompt_tokens": 85,
         "tokens_saved": 1020,
-        "cost_saved_usd": 0.002550,
+        "cost_saved_usd": 0.002040,
         "optimizations_applied": [
             "prompt-aware → low detail (simple task)",
-            "cascade → gpt-4o-mini (simple task)"
+            "cascade → gpt-4.1-mini (simple task)"
         ],
         "cache_hit": false,
-        "model_cascaded_to": "gpt-4o-mini"
+        "model_cascaded_to": "gpt-4.1-mini"
     }
 }
 ```
@@ -519,10 +609,10 @@ Standard OpenAI-compatible response with an additional `token0` field:
 
 | Provider | Models | Notes |
 |---|---|---|
-| **OpenAI** | GPT-4o, GPT-4o-mini, GPT-4.1, GPT-4.1-mini, GPT-4.1-nano | Detail mode + tile optimization |
+| **OpenAI** | GPT-4.1, GPT-4.1-mini, GPT-4.1-nano, GPT-4o, GPT-4o-mini | Detail mode + tile optimization |
 | **Anthropic** | Claude Sonnet 4.6, Claude Opus 4.6, Claude Haiku 4.5 | Pixel-based token formula |
 | **Google** | Gemini 2.5 Flash, Gemini 2.5 Pro | |
-| **Ollama** | moondream, llava, llava-llama3, minicpm-v, any vision model | Free, local inference |
+| **Ollama** | moondream, llava, llava-llama3, minicpm-v, gemma3, granite3.2-vision, any vision model | Free, local inference |
 
 ---
 
