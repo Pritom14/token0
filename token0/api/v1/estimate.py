@@ -51,8 +51,12 @@ async def estimate(request: EstimateRequest) -> EstimateResponse:
     provider_name = get_provider_from_model(request.model)
     # Convert Pydantic messages to dicts for prompt_classifier compatibility
     messages_as_dicts = [
-        {"role": m.role, "content": m.content if isinstance(m.content, str)
-         else [{"type": p.type, "text": p.text} for p in m.content]}
+        {
+            "role": m.role,
+            "content": m.content
+            if isinstance(m.content, str)
+            else [{"type": p.type, "text": p.text} for p in m.content],
+        }
         for m in request.messages
     ]
     prompt_text = extract_prompt_text(messages_as_dicts)
@@ -91,7 +95,9 @@ async def estimate(request: EstimateRequest) -> EstimateResponse:
                     ImageEstimate(
                         original_tokens=plan.estimated_tokens_before,
                         optimized_tokens=plan.estimated_tokens_after,
-                        tokens_saved=max(0, plan.estimated_tokens_before - plan.estimated_tokens_after),  # noqa: E501
+                        tokens_saved=max(
+                            0, plan.estimated_tokens_before - plan.estimated_tokens_after
+                        ),  # noqa: E501
                         cost_saved_usd=round(max(0.0, cost_before - cost_after), 6),
                         optimizations=plan.reasons,
                     )
