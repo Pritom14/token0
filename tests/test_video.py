@@ -4,11 +4,9 @@ import tempfile
 
 import cv2
 import numpy as np
-import pytest
 from PIL import Image
 
 from token0.optimization.video import (
-    DEDUP_HAMMING_THRESHOLD,
     deduplicate_frames,
     detect_scene_changes,
     extract_frames,
