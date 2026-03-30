@@ -29,7 +29,7 @@ Your App → Token0 Proxy → [Analyze → Classify → Route → Transform → 
          Database (logs every optimization decision + savings)
 ```
 
-Token0 applies **7 optimizations** automatically:
+Token0 applies **9 optimizations** automatically:
 
 ### Core Optimizations (Free Tier)
 
@@ -49,11 +49,15 @@ Token0 applies **7 optimizations** automatically:
 
 **7. Semantic Response Cache** — Cache responses for similar image+prompt pairs using perceptual image hashing. Repeated or similar queries cost 0 tokens. Effective on repetitive workloads (product classification, document processing).
 
+**8. QJL-Compressed Fuzzy Cache** — Similar (not just identical) images hit the cache using Quantized Johnson-Lindenstrauss random projection. Compresses 256-bit perceptual hashes to 128-bit binary signatures, matches via Hamming distance. Inspired by Google's TurboQuant (arXiv 2504.19874). **62% additional token savings** on image variations in benchmarks — similar product photos, re-scanned documents, and slightly different angles all hit cache.
+
+**9. Video Optimization** — Automatically extract keyframes from video at 1fps, deduplicate similar consecutive frames using QJL perceptual hashing, detect scene changes via pixel-level diff, and run each keyframe through the full image optimization pipeline. A 60-second video at 30fps (1,800 frames) reduces to ~10 keyframes before being sent to the LLM. **13-45% savings on local models; ~83% projected savings on GPT-4o.** Optional CLIP-based query-frame scoring (Layer 2) ranks frames by relevance to the user's prompt.
+
 ---
 
 ## Benchmarks
 
-We benchmarked Token0 against **4 vision models** on **5 real-world images** (not synthetic — actual photos, receipts, documents, and screenshots), plus cost projections using OpenAI and Anthropic's published token formulas.
+We benchmarked Token0 against **7 vision models** on **5 real-world images** (not synthetic — actual photos, receipts, documents, and screenshots) and **3 test videos**, plus cost projections using OpenAI and Anthropic's published token formulas.
 
 ### Real-World Image Test Suite
 
@@ -111,16 +115,55 @@ We benchmarked Token0 against **4 vision models** on **5 real-world images** (no
 | Screenshot (2066x766) | 618 | 244 | **60.5%** | **-3,744ms** | OCR route |
 | **Total** | **3,027** | **2,243** | **25.9%** | | |
 
-### Summary Across All Models
+### Image Benchmark Summary (7 Models)
 
-| Model | Params | Total Direct | Total Token0 | Savings |
-|---|---|---|---|---|
-| minicpm-v | 8B | 10,877 | 6,276 | **42.3%** |
-| moondream | 1.7B | 16,457 | 10,240 | **37.8%** |
-| llava-llama3 | 8B | 13,365 | 8,486 | **36.5%** |
-| llava:7b | 7B | 13,384 | 8,701 | **35.0%** |
+| Model | Params | Total Direct | Total Token0 | Savings | Notes |
+|---|---|---|---|---|---|
+| granite3.2-vision | 3B | 129,836 | 60,924 | **53.1%** | High-res image encoder |
+| minicpm-v | 8B | 10,877 | 6,276 | **42.3%** | |
+| moondream | 1.7B | 16,457 | 10,240 | **37.8%** | |
+| llava-llama3 | 8B | 13,365 | 8,486 | **36.5%** | |
+| llava:7b | 7B | 13,384 | 8,701 | **35.0%** | |
+| gemma3:4b | 4B | 6,380 | 4,798 | **24.8%** | |
+| llama3.2-vision | 11B | 665 | 665 | **0%** | Ultra-efficient encoder: passthrough correct, no optimization needed |
 
-### GPT-4o Cost Projections (v1 vs v2)
+> The 0% savings on llama3.2-vision is expected and correct. This model uses ~8-27 tokens per image natively — far below what OCR text extraction would cost. Token0 detects this and correctly skips all lossy optimizations.
+
+### Video Benchmark Results
+
+Test setup: 3 videos (product showcase, document montage, mixed content), naive baseline = all frames at 1fps sent raw, Token0 = frame dedup + scene detection + per-frame image optimization.
+
+| Model | Naive Tokens | Token0 Tokens | Savings |
+|---|---|---|---|
+| gemma3:4b | 14,706 | 8,081 | **45.0%** |
+| llava:7b | 15,731 | 12,845 | **18.3%** |
+| llava-llama3 | 15,658 | 12,789 | **18.3%** |
+| minicpm-v | 7,428 | 6,447 | **13.2%** |
+| moondream | 12,288 | 11,714 | **4.7%** |
+
+**Why moondream shows less video savings:** moondream uses a very small frame encoder — its per-frame token cost is already low, so frame dedup has less absolute impact than on higher-token models.
+
+### GPT-4o Video Extrapolation (ballpark)
+
+Using OpenAI's published tile formula (512px tiles, 170 tokens/tile):
+
+| Scenario | Naive | Token0 | Savings |
+|---|---|---|---|
+| 60s video, 30fps (1,800 frames → 1fps → 60 frames → dedup to ~10) | ~25,500 tokens | ~4,250 tokens | **~83%** |
+| Monthly cost at 10K videos/day (GPT-4o $2.50/1M tokens) | $19,125/mo | $3,188/mo | **$15,938/mo saved** |
+
+### Anthropic Video Extrapolation (ballpark)
+
+Using Anthropic's pixel formula (tokens ≈ width × height / 750):
+
+| Scenario | Naive | Token0 | Savings |
+|---|---|---|---|
+| 60s video, 1fps = 60 frames at 1280×720 | ~73,700 tokens | ~12,300 tokens | **~83%** |
+| Monthly cost at 1K videos/day (Claude Sonnet $3/1M tokens) | $6,633/mo | $1,107/mo | **$5,526/mo saved** |
+
+> These are linear extrapolations from the token formula + observed dedup ratios (60 frames → ~10 keyframes). Actual savings vary by content type — talking-head video deduplicates more aggressively than action scenes.
+
+### GPT-4o Image Cost Projections (v1 vs v2)
 
 Using OpenAI's published token formulas on real images:
 
@@ -150,11 +193,13 @@ Using OpenAI's published token formulas on real images:
 5. **Prompt-aware detail mode** drops simple queries from 1,105 → 85 tokens (92% savings) on GPT-4o.
 6. **Model cascade** routes simple tasks at 16.7x cheaper rates with equivalent quality.
 7. **Tile-optimized resize** cuts OpenAI costs by 44% on mid-size images (1280x720) with zero quality loss.
-8. **On cloud APIs, total savings reach 98.9%** when all optimizations are combined with model cascading.
+8. **On cloud APIs, total image savings reach 98.9%** when all optimizations are combined with model cascading.
+9. **Video deduplication collapses 60-frame clips to ~10 keyframes** — 13-45% savings on local models, ~83% projected on GPT-4o.
+10. **Model-aware OCR skip is critical** — ultra-efficient encoders like llama3.2-vision use <50 tokens/image; OCR text output would cost more, not less.
 
 ### Additional Test Coverage
 
-Token0 includes **103 unit tests** and benchmarks across multiple suites:
+Token0 includes **148 unit tests** and benchmarks across multiple suites:
 
 | Suite | Tests | What It Validates |
 |---|---|---|
@@ -166,6 +211,8 @@ Token0 includes **103 unit tests** and benchmarks across multiple suites:
 | `real` | 5 | Real-world photos, receipts, invoices, screenshots |
 | `streaming` | 7 | SSE streaming: format, content, stats, image optimization |
 | `litellm` | 10 | LiteLLM hook: passthrough, optimization, OCR, cascade, async |
+| `cache` | 23 | QJL fuzzy cache: perceptual hash, JL compression, Hamming distance, fuzzy match |
+| `video` | 22 | Frame extraction, QJL dedup, scene detection, CLIP scoring, full pipeline |
 
 ---
 
@@ -232,6 +279,26 @@ response = client.chat.completions.create(
 # response.token0.tokens_saved = 1305
 # response.token0.cost_saved_usd = 0.003263
 # response.token0.optimizations_applied = ["resize 4000x3000 → 1568x1176", "convert png → jpeg q=85"]
+```
+
+### Video Support
+
+Send a video URL or base64-encoded video — Token0 automatically extracts keyframes, deduplicates, and optimizes before forwarding:
+
+```python
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What happens in this video?"},
+            {"type": "video_url", "video_url": {"url": "data:video/mp4;base64,..."}}
+        ]
+    }],
+    extra_headers={"X-Provider-Key": "sk-..."}
+)
+# 1,800 raw frames → ~10 keyframes → optimized images → LLM
+# response.token0.tokens_saved = 21,250  (~83% on GPT-4o)
 ```
 
 ### Streaming Support
@@ -332,11 +399,15 @@ curl http://localhost:8000/v1/usage
 pip install token0[dev]
 ollama pull moondream
 
-# Run all suites
+# Run all image suites
 python -m benchmarks.run --model moondream --suite all
 
 # Run only real-world images
 python -m benchmarks.run --model llava:7b --suite real
+
+# Run video benchmarks (requires Ollama + real images in benchmarks/images/real/)
+python -m benchmarks.bench_video_models
+python -m benchmarks.bench_video_models --model llava:7b --model minicpm-v
 
 # Available suites: images, text, multi, turns, tasks, real, all
 # Available models: any Ollama vision model

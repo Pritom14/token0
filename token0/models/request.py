@@ -6,10 +6,15 @@ class ImageUrl(BaseModel):
     detail: str | None = None  # "low", "high", "auto"
 
 
+class VideoUrl(BaseModel):
+    url: str
+
+
 class ContentPart(BaseModel):
-    type: str  # "text" or "image_url"
+    type: str  # "text", "image_url", or "video_url"
     text: str | None = None
     image_url: ImageUrl | None = None
+    video_url: VideoUrl | None = None
 
 
 class Message(BaseModel):

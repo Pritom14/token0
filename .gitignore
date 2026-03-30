@@ -16,6 +16,7 @@ build/
 .token0_images/
 benchmarks/images/real/screenshot_real.png
 benchmarks/results/
+benchmarks/videos/
 *.db-journal
 .DS_Store
 .idea/
