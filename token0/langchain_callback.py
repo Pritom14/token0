@@ -26,11 +26,12 @@ from typing import Any
 try:
     from langchain_core.callbacks.base import BaseCallbackHandler
     from langchain_core.messages import BaseMessage
+
+    _langchain_available = True
 except ImportError:
-    raise ImportError(
-        "langchain-core is required for the Token0Callback integration. "
-        "Install it with: pip install langchain-core"
-    )
+    _langchain_available = False
+    BaseCallbackHandler = object  # type: ignore[assignment,misc]
+    BaseMessage = object  # type: ignore[assignment]
 
 from token0.litellm_hook import _optimize_messages
 
@@ -72,6 +73,11 @@ class Token0Callback(BaseCallbackHandler):
         enable_cascade: bool = False,
         detail_override: str | None = None,
     ):
+        if not _langchain_available:
+            raise ImportError(
+                "langchain-core is required for the Token0Callback integration. "
+                "Install it with: pip install langchain-core"
+            )
         self.enable_cascade = enable_cascade
         self.detail_override = detail_override
 

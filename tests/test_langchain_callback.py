@@ -6,6 +6,8 @@ import io
 import pytest
 from PIL import Image
 
+pytest.importorskip("langchain_core", reason="langchain-core not installed")
+
 
 def _make_image_data_uri(width: int = 800, height: int = 600) -> str:
     img = Image.new("RGB", (width, height), color=(100, 150, 200))
