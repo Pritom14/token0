@@ -33,6 +33,7 @@ from token0.optimization.router import (
     plan_optimization,
 )
 from token0.optimization.transformer import transform_image
+from token0.optimization.video import process_video
 from token0.providers.anthropic import AnthropicProvider
 from token0.providers.base import BaseProvider, get_cost_per_token
 from token0.providers.google import GoogleProvider
@@ -100,6 +101,81 @@ def _optimize_messages(request: ChatRequest, prompt_detail: str):
         for part in msg.content:
             if part.type == "text":
                 optimized_parts.append({"type": "text", "text": part.text})
+            elif part.type == "video_url" and part.video_url and request.token0_optimize:
+                # Video optimization: extract keyframes, dedup, optimize each
+                prompt_text = extract_prompt_text(request.messages)
+                video_frames, video_stats = process_video(
+                    part.video_url.url,
+                    prompt=prompt_text,
+                )
+                optimizations_applied.append(
+                    f"video: {video_stats['total_video_frames']} frames → "
+                    f"{video_stats['frames_selected']} keyframes "
+                    f"({video_stats['frame_reduction_pct']}% reduction)"
+                )
+                # Each keyframe goes through the image optimization pipeline
+                for frame_img in video_frames:
+                    import base64 as b64mod
+                    import io as iomod
+
+                    buf = iomod.BytesIO()
+                    frame_img.save(buf, format="JPEG", quality=85)
+                    frame_bytes = buf.getvalue()
+                    frame_b64 = b64mod.b64encode(frame_bytes).decode()
+                    frame_data = f"data:image/jpeg;base64,{frame_b64}"
+
+                    frame_analysis, frame_raw, frame_pil = analyze_image(frame_data)
+                    if first_pil_image is None:
+                        first_pil_image = frame_pil
+
+                    frame_plan = plan_optimization(
+                        frame_analysis,
+                        request.model,
+                        detail_override=request.token0_detail_override,
+                        prompt_detail=prompt_detail,
+                        enable_cascade=request.token0_enable_cascade,
+                    )
+                    plans.append(frame_plan)
+                    total_tokens_before += frame_plan.estimated_tokens_before
+                    total_tokens_after += frame_plan.estimated_tokens_after
+
+                    if frame_plan.use_ocr_route:
+                        result = transform_image(frame_plan, frame_analysis, frame_raw, frame_pil)
+                        optimized_parts.append(
+                            {
+                                "type": "text",
+                                "text": f"[Extracted text from video frame]:\n{result['content']}",
+                            }
+                        )
+                    elif any(
+                        [frame_plan.resize, frame_plan.recompress_jpeg, frame_plan.force_detail_low]
+                    ):
+                        result = transform_image(frame_plan, frame_analysis, frame_raw, frame_pil)
+                        detail = "low" if frame_plan.force_detail_low else "auto"
+                        optimized_parts.append(
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{result['media_type']};base64,{result['base64']}",
+                                    "detail": detail,
+                                },
+                            }
+                        )
+                    else:
+                        optimized_parts.append(
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": frame_data,
+                                    "detail": "auto",
+                                },
+                            }
+                        )
+                # Also estimate tokens for all dropped frames (what it would have cost)
+                tokens_per_frame_avg = 765  # GPT-4o high detail estimate
+                dropped_frames = video_stats["total_video_frames"] - video_stats["frames_selected"]
+                total_tokens_before += dropped_frames * tokens_per_frame_avg
+
             elif part.type == "image_url" and part.image_url and request.token0_optimize:
                 image_data = part.image_url.url
                 analysis, raw_bytes, pil_image = analyze_image(image_data)

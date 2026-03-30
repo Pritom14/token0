@@ -50,6 +50,13 @@ def get_provider_from_model(model: str) -> str:
         "yi-vl",
         "llava-phi",
         "nanollava",
+        "llama3.2-vision",
+        "llama3.2",
+        "gemma3",
+        "granite3.2",
+        "granite3",
+        "qwen2.5vl",
+        "qwen3-vl",
     )
     if any(k in model_lower for k in ollama_models):
         return "ollama"
@@ -144,18 +151,38 @@ def plan_optimization(
 
     # --- Optimization 1: OCR Route ---
     if analysis.is_mostly_text:
-        plan.use_ocr_route = True
-        plan.reasons.append(
-            f"text_density={analysis.text_density:.2f} "
-            f"> {settings.text_density_threshold} — OCR route"
-        )
-        plan.estimated_tokens_before = _estimate_tokens(analysis, provider, "high")
-        plan.estimated_tokens_after = 200
-        # Still suggest cascade for OCR route (text processing is simple)
-        if enable_cascade and model in MODEL_CASCADE:
-            plan.recommended_model = MODEL_CASCADE[model]
-            plan.reasons.append(f"cascade → {plan.recommended_model} (text task)")
-        return plan
+        estimated_image_tokens = _estimate_tokens(analysis, provider, "high")
+        estimated_ocr_tokens = 200  # typical OCR text extraction output
+
+        # Some Ollama models encode images with extremely few tokens — far fewer
+        # than our estimation formula predicts. For these, OCR text output
+        # (200-700 tokens) costs MORE than just sending the image.
+        # Only skip OCR for models confirmed to use <50 tokens per image.
+        _ultra_efficient_models = ("llama3.2-vision", "llama3.2")
+        is_ultra_efficient = any(k in model.lower() for k in _ultra_efficient_models)
+        if provider == "ollama" and is_ultra_efficient:
+            plan.reasons.append(
+                f"text_density={analysis.text_density:.2f} but Ollama model — "
+                f"skip OCR (image tokens ~{estimated_image_tokens} likely cheaper than OCR text)"
+            )
+        elif estimated_image_tokens <= estimated_ocr_tokens:
+            plan.reasons.append(
+                f"text_density={analysis.text_density:.2f} but image tokens "
+                f"({estimated_image_tokens}) ≤ OCR estimate ({estimated_ocr_tokens}) — skip OCR"
+            )
+        else:
+            plan.use_ocr_route = True
+            plan.reasons.append(
+                f"text_density={analysis.text_density:.2f} "
+                f"> {settings.text_density_threshold} — OCR route"
+            )
+            plan.estimated_tokens_before = estimated_image_tokens
+            plan.estimated_tokens_after = estimated_ocr_tokens
+            # Still suggest cascade for OCR route (text processing is simple)
+            if enable_cascade and model in MODEL_CASCADE:
+                plan.recommended_model = MODEL_CASCADE[model]
+                plan.reasons.append(f"cascade → {plan.recommended_model} (text task)")
+            return plan
 
     # --- Optimization 2: Prompt-Aware Detail Mode (NEW) ---
     if provider == "openai" and detail_override != "high":
