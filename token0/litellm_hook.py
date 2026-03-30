@@ -126,6 +126,33 @@ def _optimize_messages(
                 opt_parts.append(part)
                 continue
 
+            # PDF pre-processing: extract text layer if available
+            from token0.optimization.pdf import (
+                decode_pdf,
+                estimate_pdf_tokens,
+                extract_pdf_text,
+                is_pdf_data_uri,
+            )
+
+            if is_pdf_data_uri(url):
+                try:
+                    pdf_bytes = decode_pdf(url)
+                    pdf_text = extract_pdf_text(pdf_bytes)
+                    if pdf_text:
+                        token_count = estimate_pdf_tokens(pdf_text)
+                        total_before += 765
+                        total_after += token_count
+                        optimizations.append("pdf → text layer extracted")
+                        opt_parts.append(
+                            {"type": "text", "text": f"[Extracted text from PDF]:\n{pdf_text}"}
+                        )
+                    else:
+                        opt_parts.append(part)  # no text layer — passthrough
+                except Exception:
+                    logger.warning("token0: PDF extraction failed, passing through", exc_info=True)
+                    opt_parts.append(part)
+                continue
+
             try:
                 analysis, raw_bytes, pil_image = analyze_image(url)
                 plan = plan_optimization(

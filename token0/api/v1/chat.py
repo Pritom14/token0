@@ -178,6 +178,33 @@ def _optimize_messages(request: ChatRequest, prompt_detail: str):
 
             elif part.type == "image_url" and part.image_url and request.token0_optimize:
                 image_data = part.image_url.url
+
+                # PDF pre-processing: extract text layer if available
+                from token0.optimization.pdf import (
+                    decode_pdf,
+                    estimate_pdf_tokens,
+                    extract_pdf_text,
+                    is_pdf_data_uri,
+                )
+
+                if is_pdf_data_uri(image_data):
+                    pdf_bytes = decode_pdf(image_data)
+                    pdf_text = extract_pdf_text(pdf_bytes)
+                    if pdf_text:
+                        token_count = estimate_pdf_tokens(pdf_text)
+                        total_tokens_before += 765  # approx cost of rendering as image
+                        total_tokens_after += token_count
+                        optimizations_applied.append("pdf → text layer extracted")
+                        optimized_parts.append(
+                            {"type": "text", "text": f"[Extracted text from PDF]:\n{pdf_text}"}
+                        )
+                        continue
+                    # No text layer — pass through to provider (Anthropic/Gemini support native PDF)
+                    optimized_parts.append(
+                        {"type": "image_url", "image_url": {"url": image_data, "detail": None}}
+                    )
+                    continue
+
                 analysis, raw_bytes, pil_image = analyze_image(image_data)
 
                 if first_pil_image is None:
