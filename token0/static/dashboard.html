@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Token0 Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+  header { padding: 24px 32px; border-bottom: 1px solid #1e2535; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 20px; font-weight: 700; color: #fff; }
+  header span { font-size: 12px; background: #1a2744; color: #60a5fa; padding: 3px 10px; border-radius: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 28px 32px; }
+  .card { background: #161b27; border: 1px solid #1e2535; border-radius: 12px; padding: 20px; }
+  .card .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+  .card .value { font-size: 32px; font-weight: 700; color: #fff; }
+  .card .value.green { color: #34d399; }
+  .card .value.blue { color: #60a5fa; }
+  .card .sub { font-size: 12px; color: #64748b; margin-top: 4px; }
+  .section { padding: 0 32px 28px; }
+  .section h2 { font-size: 14px; font-weight: 600; color: #94a3b8; margin-bottom: 14px; text-transform: uppercase; letter-spacing: .05em; }
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .bar-label { font-size: 13px; color: #cbd5e1; width: 200px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-bg { flex: 1; height: 8px; background: #1e2535; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; background: #3b82f6; transition: width .6s ease; }
+  .bar-count { font-size: 12px; color: #64748b; width: 40px; text-align: right; }
+  .loading { text-align: center; padding: 80px; color: #64748b; }
+  .error { text-align: center; padding: 80px; color: #f87171; }
+  .refresh { margin-left: auto; font-size: 12px; color: #64748b; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; display: inline-block; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Token0</h1>
+  <span>Dashboard</span>
+  <div class="refresh"><span class="live-dot"></span>Live</div>
+</header>
+
+<div id="app"><div class="loading">Loading...</div></div>
+
+<script>
+async function load() {
+  try {
+    const r = await fetch('/v1/usage');
+    if (!r.ok) throw new Error(r.statusText);
+    const d = await r.json();
+    render(d);
+  } catch(e) {
+    document.getElementById('app').innerHTML = `<div class="error">Failed to load: ${e.message}<br><small>Make sure token0 is running</small></div>`;
+  }
+}
+
+function fmt(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toString();
+}
+
+function render(d) {
+  const savings_pct = d.avg_compression_ratio > 0
+    ? Math.round((1 - 1/d.avg_compression_ratio) * 100)
+    : 0;
+
+  const breakdown = d.optimization_breakdown || {};
+  const total_opts = Object.values(breakdown).reduce((a,b) => a+b, 0) || 1;
+  const bars = Object.entries(breakdown)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k,v]) => {
+      const pct = Math.round(v/total_opts*100);
+      return `<div class="bar-row">
+        <div class="bar-label">${k || 'passthrough'}</div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="bar-count">${fmt(v)}</div>
+      </div>`;
+    }).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="grid">
+      <div class="card">
+        <div class="label">Total Requests</div>
+        <div class="value blue">${fmt(d.total_requests)}</div>
+        <div class="sub">all time</div>
+      </div>
+      <div class="card">
+        <div class="label">Tokens Saved</div>
+        <div class="value green">${fmt(d.total_tokens_saved)}</div>
+        <div class="sub">vs unoptimized</div>
+      </div>
+      <div class="card">
+        <div class="label">Cost Saved</div>
+        <div class="value green">$${d.total_cost_saved_usd.toFixed(2)}</div>
+        <div class="sub">USD all time</div>
+      </div>
+      <div class="card">
+        <div class="label">Avg Savings</div>
+        <div class="value green">${savings_pct}%</div>
+        <div class="sub">compression ratio ${d.avg_compression_ratio}x</div>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Optimizations Applied</h2>
+      ${bars || '<div style="color:#64748b;font-size:13px">No data yet — send some requests through token0</div>'}
+    </div>
+  `;
+}
+
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>

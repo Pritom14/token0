@@ -1,7 +1,10 @@
 import logging
+import pathlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from token0.api.v1.chat import router as chat_router
 from token0.api.v1.estimate import router as estimate_router
@@ -43,6 +46,15 @@ app = FastAPI(
 app.include_router(chat_router, prefix="/v1")
 app.include_router(estimate_router, prefix="/v1")
 app.include_router(usage_router, prefix="/v1")
+
+
+_static = pathlib.Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=_static), name="static")
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard():
+    return HTMLResponse((_static / "dashboard.html").read_text())
 
 
 @app.get("/health")
