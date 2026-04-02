@@ -449,6 +449,35 @@ response = llm.invoke([HumanMessage(content=[
 
 Works with any LangChain chat model — ChatOpenAI, ChatAnthropic, ChatGoogleGenerativeAI, etc.
 
+### Use With Instructor
+
+Already using [Instructor](https://github.com/jxnl/instructor) for structured outputs? Add Token0 as a pre-call hook:
+
+```python
+import instructor
+import openai
+from token0.instructor_hook import Token0Hook
+
+client = instructor.from_openai(openai.OpenAI())
+client.on("completion:kwargs", Token0Hook())
+
+# All calls now get image optimization automatically
+response = client.chat.completions.create(
+    model="gpt-4.1",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What is the total on this invoice?"},
+            {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
+        ]
+    }],
+    response_model=MyModel,
+)
+# Invoice image cropped to bottom 40% (saliency) + OCR routed — ~90% token savings
+```
+
+Works with any instructor-supported provider — OpenAI, Anthropic, Google, Ollama.
+
 ### Use With Ollama (free, fully local)
 
 ```bash
