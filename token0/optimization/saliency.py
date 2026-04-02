@@ -28,8 +28,20 @@ _REGION_RULES: list[tuple[list[str], tuple[float, float, float, float]]] = [
     ),
     # Full bottom strip
     (
-        ["footer", "total", "amount due", "grand total", "subtotal", "bottom of",
-         "bottom section", "signature", "sign", "terms", "footnote", "fine print"],
+        [
+            "footer",
+            "total",
+            "amount due",
+            "grand total",
+            "subtotal",
+            "bottom of",
+            "bottom section",
+            "signature",
+            "sign",
+            "terms",
+            "footnote",
+            "fine print",
+        ],
         (0.0, 0.60, 1.0, 1.0),
     ),
     # Top-left quadrant
@@ -39,8 +51,17 @@ _REGION_RULES: list[tuple[list[str], tuple[float, float, float, float]]] = [
     ),
     # Top-right quadrant
     (
-        ["top right", "top-right", "upper right", "upper-right", "date", "invoice number",
-         "reference number", "ref no", "order number"],
+        [
+            "top right",
+            "top-right",
+            "upper right",
+            "upper-right",
+            "date",
+            "invoice number",
+            "reference number",
+            "ref no",
+            "order number",
+        ],
         (0.45, 0.0, 1.0, 0.55),
     ),
     # Bottom-left quadrant
@@ -50,8 +71,15 @@ _REGION_RULES: list[tuple[list[str], tuple[float, float, float, float]]] = [
     ),
     # Bottom-right quadrant
     (
-        ["bottom right", "bottom-right", "lower right", "lower-right", "total amount",
-         "balance due", "net total"],
+        [
+            "bottom right",
+            "bottom-right",
+            "lower right",
+            "lower-right",
+            "total amount",
+            "balance due",
+            "net total",
+        ],
         (0.45, 0.45, 1.0, 1.0),
     ),
     # Center region

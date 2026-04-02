@@ -94,6 +94,7 @@ def optimize_messages(
                     pil_image = apply_saliency_crop(pil_image, saliency)
                     # Re-encode cropped image to bytes for downstream steps
                     import io as _io
+
                     fmt = "JPEG" if analysis.format == "jpg" else analysis.format.upper()
                     buf = _io.BytesIO()
                     pil_image.save(buf, format=fmt)
