@@ -1,6 +1,5 @@
 """Tests for saliency-based ROI cropping."""
 
-import pytest
 from PIL import Image
 
 from token0.optimization.saliency import SaliencyResult, apply_saliency_crop, detect_roi

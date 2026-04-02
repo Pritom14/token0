@@ -93,15 +93,14 @@ def optimize_messages(
                 if saliency.cropped:
                     pil_image = apply_saliency_crop(pil_image, saliency)
                     # Re-encode cropped image to bytes for downstream steps
-                    import base64
                     import io as _io
+                    fmt = "JPEG" if analysis.format == "jpg" else analysis.format.upper()
                     buf = _io.BytesIO()
-                    pil_image.save(buf, format=analysis.format.upper() if analysis.format != "jpg" else "JPEG")
+                    pil_image.save(buf, format=fmt)
                     raw_bytes = buf.getvalue()
-                    optimizations.append(
-                        f"saliency crop ({saliency.matched_keyword!r}: {saliency.savings_pct:.0%} pixels removed)"
-                    )
-                    logger.debug("token0: saliency crop on %r, savings=%.0f%%", saliency.matched_keyword, saliency.savings_pct * 100)
+                    kw, pct = saliency.matched_keyword, saliency.savings_pct
+                    optimizations.append(f"saliency crop ({kw!r}: {pct:.0%} pixels removed)")
+                    logger.debug("token0: saliency crop on %r, savings=%.0f%%", kw, pct * 100)
 
                 plan = plan_optimization(
                     analysis,
