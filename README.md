@@ -30,7 +30,7 @@ Your App → Token0 Proxy → [Analyze → Classify → Route → Transform → 
          Database (logs every optimization decision + savings)
 ```
 
-Token0 applies **10 optimizations** automatically:
+Token0 applies **11 optimizations** automatically:
 
 ### Core Optimizations (Free Tier)
 
@@ -55,6 +55,8 @@ Token0 applies **10 optimizations** automatically:
 **9. QJL-Compressed Fuzzy Cache** — Similar (not just identical) images hit the cache using Quantized Johnson-Lindenstrauss random projection. Compresses 256-bit perceptual hashes to 128-bit binary signatures, matches via Hamming distance. Inspired by Google's TurboQuant (arXiv 2504.19874). **62% additional token savings** on image variations in benchmarks — similar product photos, re-scanned documents, and slightly different angles all hit cache.
 
 **10. Video Optimization** — Automatically extract keyframes from video at 1fps, deduplicate similar consecutive frames using QJL perceptual hashing, detect scene changes via pixel-level diff, and run each keyframe through the full image optimization pipeline. A 60-second video at 30fps (1,800 frames) reduces to ~10 keyframes before being sent to the LLM. **13-45% savings on local models; ~83% projected savings on GPT-4.1.** Optional CLIP-based query-frame scoring (Layer 2) ranks frames by relevance to the user's prompt.
+
+**11. Saliency-Based ROI Cropping** — Detects which region of an image the prompt is asking about and crops to that region before sending to the LLM. "What's the total on this invoice?" → crops to the bottom 40% of the image. "Read the header" → crops to the top 25%. Rule-based spatial keyword matching (zero ML deps). Delivers ~60% additional pixel reduction on document and form images before any other optimization runs.
 
 ---
 
@@ -481,6 +483,10 @@ curl http://localhost:8000/v1/usage
     "optimization_breakdown": {"resize": 20, "ocr_route": 15, "detail_mode": 12}
 }
 ```
+
+### Savings Dashboard
+
+Open `http://localhost:8000/dashboard` in your browser for a live view of total requests, tokens saved, cost saved, and per-optimization breakdown. Auto-refreshes every 10 seconds.
 
 ### Run Benchmarks Yourself
 
