@@ -6,7 +6,9 @@ Used by both litellm_hook.py and langchain_callback.py.
 import logging
 
 from token0.optimization.analyzer import analyze_image
+from token0.optimization.prompt_classifier import extract_prompt_text
 from token0.optimization.router import plan_optimization
+from token0.optimization.saliency import apply_saliency_crop, detect_roi
 from token0.optimization.transformer import transform_image
 
 logger = logging.getLogger("token0.optimizer")
@@ -27,6 +29,7 @@ def optimize_messages(
     total_after = 0
     optimizations = []
     recommended_model = None
+    prompt_text = extract_prompt_text(messages)
 
     for msg in messages:
         content = msg.get("content")
@@ -84,6 +87,22 @@ def optimize_messages(
 
             try:
                 analysis, raw_bytes, pil_image = analyze_image(url)
+
+                # Saliency crop — trim to region the prompt asks about
+                saliency = detect_roi(prompt_text, pil_image)
+                if saliency.cropped:
+                    pil_image = apply_saliency_crop(pil_image, saliency)
+                    # Re-encode cropped image to bytes for downstream steps
+                    import io as _io
+
+                    fmt = "JPEG" if analysis.format == "jpg" else analysis.format.upper()
+                    buf = _io.BytesIO()
+                    pil_image.save(buf, format=fmt)
+                    raw_bytes = buf.getvalue()
+                    kw, pct = saliency.matched_keyword, saliency.savings_pct
+                    optimizations.append(f"saliency crop ({kw!r}: {pct:.0%} pixels removed)")
+                    logger.debug("token0: saliency crop on %r, savings=%.0f%%", kw, pct * 100)
+
                 plan = plan_optimization(
                     analysis,
                     model,
