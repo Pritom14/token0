@@ -10,11 +10,17 @@ class VideoUrl(BaseModel):
     url: str
 
 
+class AccessibilityTree(BaseModel):
+    data: dict | list | str  # Playwright/CDP dict, list of roots, or pre-serialized string
+    source: str | None = None  # "playwright", "axui", "selenium", "cdp" — informational only
+
+
 class ContentPart(BaseModel):
-    type: str  # "text", "image_url", or "video_url"
+    type: str  # "text", "image_url", "video_url", or "accessibility_tree"
     text: str | None = None
     image_url: ImageUrl | None = None
     video_url: VideoUrl | None = None
+    accessibility_tree: AccessibilityTree | None = None
 
 
 class Message(BaseModel):

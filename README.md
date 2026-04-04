@@ -30,7 +30,7 @@ Your App → Token0 Proxy → [Analyze → Classify → Route → Transform → 
          Database (logs every optimization decision + savings)
 ```
 
-Token0 applies **11 optimizations** automatically:
+Token0 applies **12 optimizations** automatically:
 
 ### Core Optimizations (Free Tier)
 
@@ -57,6 +57,8 @@ Token0 applies **11 optimizations** automatically:
 **10. Video Optimization** — Automatically extract keyframes from video at 1fps, deduplicate similar consecutive frames using QJL perceptual hashing, detect scene changes via pixel-level diff, and run each keyframe through the full image optimization pipeline. A 60-second video at 30fps (1,800 frames) reduces to ~10 keyframes before being sent to the LLM. **13-45% savings on local models; ~83% projected savings on GPT-4.1.** Optional CLIP-based query-frame scoring (Layer 2) ranks frames by relevance to the user's prompt.
 
 **11. Saliency-Based ROI Cropping** — Detects which region of an image the prompt is asking about and crops to that region before sending to the LLM. "What's the total on this invoice?" → crops to the bottom 40% of the image. "Read the header" → crops to the top 25%. Rule-based spatial keyword matching (zero ML deps). Delivers ~60% additional pixel reduction on document and form images before any other optimization runs.
+
+**12. Accessibility Tree Routing** — UI automation agents often have both a screenshot and an accessibility tree (AXUIElement, Playwright, Chrome DevTools). Token0 accepts both and routes to the cheaper representation automatically. If the tree is complete (no canvas/iframe/opaque elements), the screenshot is dropped and the tree is serialized as compact text — **93-97% token savings** vs a 1080p screenshot. If the tree has opaque nodes (a Figma canvas, a video element), Token0 keeps the screenshot. Supports Playwright/CDP format, macOS AXUIElement format, and pre-serialized strings.
 
 ---
 
@@ -202,10 +204,58 @@ Using OpenAI's published token formulas on real images and GPT-4.1 pricing ($2.0
 9. **On cloud APIs, total image savings reach 98.9%** when all optimizations are combined with model cascading.
 10. **Video deduplication collapses 60-frame clips to ~10 keyframes** — 13-45% savings on local models, ~83% projected on GPT-4.1.
 11. **Model-aware OCR skip is critical** — ultra-efficient encoders like llama3.2-vision use <50 tokens/image; OCR text output would cost more, not less.
+12. **Accessibility tree routing eliminates screenshot cost entirely** for UI agents — 93-97% savings when the tree is complete; screenshot fallback is automatic when canvas/iframe nodes are detected.
+
+### Accessibility Tree Benchmark (GPT-4o pricing)
+
+UI agents that send both a screenshot and an accessibility tree can route to the cheaper representation automatically.
+
+**Real browser results — Playwright, 1280×720, live pages** (actual reported prompt_tokens):
+
+| Page | Screenshot Tokens | Tree Tokens | Savings | Model |
+|---|---|---|---|---|
+| Hacker News | 750 | 192 | **74.4%** | moondream |
+| Hacker News | 602 | 164 | **72.8%** | llava:7b |
+| GitHub Home | 751 | 560 | **25.4%** | moondream |
+| GitHub Home | 601 | 560 | **6.8%** | llava:7b |
+| Wikipedia | 747 | 747 | **0%** | moondream |
+| Wikipedia | 599 | 1,165 | **-94.5%** | llava:7b — tree too large |
+
+> Wikipedia's rich navigation tree exceeded the screenshot token count on llava:7b — token0 would correctly fall back to the screenshot in this case. Hacker News (minimal DOM) shows the best real-world savings.
+
+**Ollama model results — 7 vision models, synthetic 800×600 screenshots** (actual reported prompt_tokens):
+
+> Synthetic screenshots: PIL-generated images with drawn UI elements (login form, todo list). Not real browser screenshots.
+
+| Model | Screenshot Tokens | Tree Tokens | Savings | Note |
+|---|---|---|---|---|
+| granite3.2-vision | 10,328 | 218 | **97.9%** | High-res encoder |
+| moondream | 1,500 | 168 | **88.8%** | |
+| llava:7b | 1,202 | 160 | **86.7%** | |
+| llava-llama3 | 1,201 | 164 | **86.3%** | |
+| minicpm-v | 704 | 128 | **81.8%** | |
+| gemma3:4b | 566 | 145 | **74.4%** | |
+| llama3.2-vision | 46 | 130 | n/a | Ultra-efficient encoder — tree costs more; screenshot wins |
+
+**Cloud API extrapolation** (tree tokens from Ollama measurements, screenshot tokens from published formulas, 800×600 image):
+
+| Provider | Screenshot Tokens | Tree Tokens (avg) | Savings | At 100K calls/day, saved/mo |
+|---|---|---|---|---|
+| OpenAI GPT-4o | 1,530 | ~80 | **89.6%** | **~$10,282** |
+| Anthropic Claude | 1,280 | ~80 | **87.6%** | **~$10,089** |
+
+> Tree token counts are text-based and provider-agnostic (~4 chars/token). Screenshot tokens use OpenAI tile formula (85 + 170×tiles) and Anthropic pixel formula (w×h/750). Canvas/iframe nodes trigger automatic screenshot fallback — no configuration needed.
+
+Run benchmarks:
+```bash
+python -m benchmarks.bench_ax_tree                        # formula-based projections
+python -m benchmarks.bench_ax_tree_models                 # all 7 Ollama vision models (synthetic)
+python -m benchmarks.bench_ax_tree_real                   # real browser pages via Playwright
+```
 
 ### Additional Test Coverage
 
-Token0 includes **171 unit tests** and benchmarks across multiple suites:
+Token0 includes **216 unit tests** and benchmarks across multiple suites:
 
 | Suite | Tests | What It Validates |
 |---|---|---|
@@ -222,6 +272,7 @@ Token0 includes **171 unit tests** and benchmarks across multiple suites:
 | `pdf` | 8 | PDF detection, decode, text extraction, token estimation |
 | `estimate` | 11 | /v1/estimate endpoint: single image, multiple images, remote URL skip, cost calc |
 | `langchain` | 8 | LangChain callback: import, text passthrough, image optimization, role mapping |
+| `ax_tree` | 22 | AX tree serialize, opaque detection, AXUIElement format, combo routing |
 
 ---
 
@@ -368,6 +419,40 @@ response = client.chat.completions.create(
 # 1,800 raw frames → ~10 keyframes → optimized images → LLM
 # ~83% savings on GPT-4.1
 ```
+
+### Accessibility Tree Support (UI Agents)
+
+If your agent captures both a screenshot and an accessibility tree, send both — Token0 picks the cheaper path automatically:
+
+```python
+import json
+
+# Playwright example
+page = await browser.new_page()
+snapshot = await page.accessibility.snapshot()  # returns a dict
+
+response = client.chat.completions.create(
+    model="gpt-4.1",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What button should I click to submit the form?"},
+            # Screenshot fallback — only used if tree has canvas/iframe nodes
+            {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}},
+            # Accessibility tree — token0 routes to this when complete
+            {"type": "accessibility_tree", "accessibility_tree": {
+                "data": snapshot,
+                "source": "playwright"
+            }},
+        ]
+    }],
+    extra_headers={"X-Provider-Key": "sk-..."}
+)
+# GitHub PR page: 2,125 tokens (screenshot) → 132 tokens (tree) — 93.8% savings
+# response.token0.optimizations_applied = ["ax tree → text (1,993 tokens saved vs screenshot)"]
+```
+
+Works with **Playwright**, **macOS AXUIElement**, **Chrome DevTools Protocol**, and pre-serialized strings. Canvas, iframe, and video elements trigger automatic screenshot fallback — no configuration needed.
 
 ### Streaming Support
 

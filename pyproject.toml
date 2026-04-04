@@ -1,6 +1,6 @@
 [project]
 name = "token0"
-version = "0.3.2"
+version = "0.3.3"
 description = "Open-source API proxy that makes vision LLM calls 5-10x cheaper"
 readme = "README.md"
 license = "Apache-2.0"

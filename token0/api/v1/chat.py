@@ -98,6 +98,27 @@ def _optimize_messages(request: ChatRequest, prompt_detail: str):
             continue
 
         optimized_parts = []
+
+        # AX tree combo detection: if this message has both image_url and
+        # accessibility_tree parts, pick the cheaper representation once.
+        parts_list = msg.content  # already confirmed to be a list
+        has_tree = any(p.type == "accessibility_tree" for p in parts_list)
+        has_image = any(p.type == "image_url" for p in parts_list)
+        ax_drop_image = False  # True → skip image_url parts (tree wins)
+        ax_drop_tree = False  # True → skip accessibility_tree parts (image wins)
+
+        if has_tree and has_image and request.token0_optimize:
+            from token0.optimization.ax_tree import has_opaque_nodes
+
+            tree_parts = [p for p in parts_list if p.type == "accessibility_tree"]
+            tree_data = tree_parts[0].accessibility_tree.data
+            if has_opaque_nodes(tree_data):
+                # Tree has canvas/iframe — screenshot needed; drop tree to avoid redundancy.
+                ax_drop_tree = True
+            else:
+                # Tree is complete — route to text; drop screenshot (saves 90%+ tokens).
+                ax_drop_image = True
+
         for part in msg.content:
             if part.type == "text":
                 optimized_parts.append({"type": "text", "text": part.text})
@@ -176,7 +197,35 @@ def _optimize_messages(request: ChatRequest, prompt_detail: str):
                 dropped_frames = video_stats["total_video_frames"] - video_stats["frames_selected"]
                 total_tokens_before += dropped_frames * tokens_per_frame_avg
 
+            elif part.type == "accessibility_tree" and part.accessibility_tree:
+                if ax_drop_tree:
+                    # Combo: tree has opaque nodes → screenshot wins, skip tree.
+                    continue
+                from token0.optimization.ax_tree import (
+                    estimate_ax_tree_tokens,
+                    serialize_ax_tree,
+                )
+
+                serialized = serialize_ax_tree(part.accessibility_tree.data)
+                token_count = estimate_ax_tree_tokens(serialized)
+                screenshot_tokens = 5000  # conservative estimate for a 1080p screenshot
+                total_tokens_before += screenshot_tokens if ax_drop_image else token_count
+                total_tokens_after += token_count
+                if ax_drop_image:
+                    saved = screenshot_tokens - token_count
+                    optimizations_applied.append(
+                        f"ax tree → text ({saved:,} tokens saved vs screenshot)"
+                    )
+                optimized_parts.append(
+                    {"type": "text", "text": f"[UI Accessibility Tree]:\n{serialized}"}
+                )
+
             elif part.type == "image_url" and part.image_url and request.token0_optimize:
+                if ax_drop_image:
+                    # Combo: tree is complete → tree text wins, skip screenshot.
+                    total_tokens_before += 5000  # count what we avoided
+                    continue
+
                 image_data = part.image_url.url
 
                 # PDF pre-processing: extract text layer if available
