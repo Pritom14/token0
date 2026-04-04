@@ -210,6 +210,16 @@ Using OpenAI's published token formulas on real images and GPT-4.1 pricing ($2.0
 
 UI agents that send both a screenshot and an accessibility tree can route to the cheaper representation automatically.
 
+**Real Ollama model results** (actual reported prompt_tokens):
+
+| Model | Scenario | Screenshot Tokens | Tree Tokens | Savings |
+|---|---|---|---|---|
+| moondream | Login Form | 753 | 79 | **89.5%** |
+| moondream | Todo List | 747 | 89 | **88.1%** |
+| moondream | **Total** | **1,500** | **168** | **88.8%** |
+
+**GPT-4o cost projections** (tile formula):
+
 | Scenario | Screenshot Tokens | Token0 Tokens | Savings |
 |---|---|---|---|
 | GitHub PR page (Playwright tree) | 2,125 | 132 | **93.8%** |
@@ -227,7 +237,12 @@ UI agents that send both a screenshot and an accessibility tree can route to the
 
 > Canvas, iframe, and embedded media nodes trigger automatic screenshot fallback. No configuration needed.
 
-Run the benchmark: `python -m benchmarks.bench_ax_tree`
+Run benchmarks:
+```bash
+python -m benchmarks.bench_ax_tree                        # formula-based projections
+python -m benchmarks.bench_ax_tree_models                 # real Ollama model calls
+python -m benchmarks.bench_ax_tree_models --model llava:7b --model moondream
+```
 
 ### Additional Test Coverage
 
