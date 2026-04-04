@@ -210,9 +210,22 @@ Using OpenAI's published token formulas on real images and GPT-4.1 pricing ($2.0
 
 UI agents that send both a screenshot and an accessibility tree can route to the cheaper representation automatically.
 
+**Real browser results — Playwright, 1280×720, live pages** (actual reported prompt_tokens):
+
+| Page | Screenshot Tokens | Tree Tokens | Savings | Model |
+|---|---|---|---|---|
+| Hacker News | 750 | 192 | **74.4%** | moondream |
+| Hacker News | 602 | 164 | **72.8%** | llava:7b |
+| GitHub Home | 751 | 560 | **25.4%** | moondream |
+| GitHub Home | 601 | 560 | **6.8%** | llava:7b |
+| Wikipedia | 747 | 747 | **0%** | moondream |
+| Wikipedia | 599 | 1,165 | **-94.5%** | llava:7b — tree too large |
+
+> Wikipedia's rich navigation tree exceeded the screenshot token count on llava:7b — token0 would correctly fall back to the screenshot in this case. Hacker News (minimal DOM) shows the best real-world savings.
+
 **Ollama model results — 7 vision models, synthetic 800×600 screenshots** (actual reported prompt_tokens):
 
-> Synthetic screenshots: PIL-generated images with drawn UI elements (login form, todo list). Not real browser screenshots — real UIs have more visual complexity, so screenshot token counts would be higher and savings would be larger in practice.
+> Synthetic screenshots: PIL-generated images with drawn UI elements (login form, todo list). Not real browser screenshots.
 
 | Model | Screenshot Tokens | Tree Tokens | Savings | Note |
 |---|---|---|---|---|
@@ -236,8 +249,8 @@ UI agents that send both a screenshot and an accessibility tree can route to the
 Run benchmarks:
 ```bash
 python -m benchmarks.bench_ax_tree                        # formula-based projections
-python -m benchmarks.bench_ax_tree_models                 # all 7 Ollama vision models
-python -m benchmarks.bench_ax_tree_models --model llava:7b --model moondream
+python -m benchmarks.bench_ax_tree_models                 # all 7 Ollama vision models (synthetic)
+python -m benchmarks.bench_ax_tree_real                   # real browser pages via Playwright
 ```
 
 ### Additional Test Coverage
