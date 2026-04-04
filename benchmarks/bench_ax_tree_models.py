@@ -24,7 +24,15 @@ from PIL import Image, ImageDraw
 from token0.optimization.ax_tree import serialize_ax_tree
 from token0.providers.ollama import OllamaProvider
 
-DEFAULT_MODELS = ["moondream", "llava:7b"]
+VISION_MODELS = [
+    "moondream",
+    "llava:7b",
+    "llava-llama3",
+    "minicpm-v",
+    "gemma3:4b",
+    "granite3.2-vision",
+    "llama3.2-vision",
+]
 
 
 def _pil_to_data_uri(img: Image.Image, quality: int = 85) -> str:
@@ -36,7 +44,7 @@ def _pil_to_data_uri(img: Image.Image, quality: int = 85) -> str:
 
 
 def _create_login_form_screenshot() -> Image.Image:
-    """Create a login form screenshot: header, email field, password field, login button, forgot link."""
+    """Create a login form screenshot: header, email/password fields, login button, forgot link."""
     img = Image.new("RGB", (800, 600), color="white")
     draw = ImageDraw.Draw(img)
 
@@ -229,7 +237,7 @@ async def run_all_benchmarks(models: list[str]):
     scenarios = [
         {
             "name": "Login Form",
-            "question": "List every interactive element on this page (buttons, links, text fields).",
+            "question": "List every interactive element on this page (buttons, links, inputs).",
             "screenshot": _create_login_form_screenshot(),
             "ax_tree": serialize_ax_tree(_create_login_ax_tree()),
             "required_substrings": ["email", "password", "log in"],
@@ -254,8 +262,10 @@ async def run_all_benchmarks(models: list[str]):
 
         # Check if model is available
         try:
-            test_resp = await provider.chat_completion(
-                model=model, messages=[{"role": "user", "content": [{"type": "text", "text": "test"}]}], max_tokens=5
+            await provider.chat_completion(
+                model=model,
+                messages=[{"role": "user", "content": [{"type": "text", "text": "test"}]}],
+                max_tokens=5,
             )
         except Exception as e:
             print(f"  SKIPPED: Model not available ({e})")
@@ -291,9 +301,7 @@ async def run_all_benchmarks(models: list[str]):
                     f"  {r['scenario']:<20s} {r['screenshot_tokens']:>12,} "
                     f"{r['tree_tokens']:>8,} {r['savings_pct']:>7.1f}%"
                 )
-            print(
-                f"  {'TOTAL':<20s} {total_screenshot:>12,} {total_tree:>8,} {total_pct:>7.1f}%"
-            )
+            print(f"  {'TOTAL':<20s} {total_screenshot:>12,} {total_tree:>8,} {total_pct:>7.1f}%")
 
     # --- Grand summary across all models ---
     print(f"\n{'=' * 80}")
@@ -308,23 +316,105 @@ async def run_all_benchmarks(models: list[str]):
             total_tree = sum(r["tree_tokens"] for r in results)
             total_saved = total_screenshot - total_tree
             pct = (total_saved / total_screenshot * 100) if total_screenshot > 0 else 0
-            print(
-                f"  {model:<20s} {total_screenshot:>12,} {total_tree:>12,} {pct:>7.1f}%"
-            )
+            print(f"  {model:<20s} {total_screenshot:>12,} {total_tree:>12,} {pct:>7.1f}%")
 
+    print(f"\n{'=' * 80}\n")
+
+    # --- Cloud API extrapolation ---
+    # Tree tokens are text — roughly constant across all models and providers.
+    # Screenshot tokens for OpenAI/Anthropic are calculated from their published formulas.
+    # We use the average tree tokens measured across all Ollama models as our estimate.
+    successful = {m: r for m, r in all_results.items() if r}
+    if not successful:
+        return
+
+    all_tree_tokens = [t for r in successful.values() for s in r for t in [s["tree_tokens"]]]
+    avg_tree_tokens_per_scenario = sum(all_tree_tokens) / len(all_tree_tokens)
+    num_scenarios = len(scenarios)
+    total_avg_tree = avg_tree_tokens_per_scenario * num_scenarios
+
+    # OpenAI GPT-4o: 800x600 JPEG → tile formula (512px tiles)
+    # tiles = ceil(800/512) * ceil(600/512) = 2 * 2 = 4 tiles
+    # tokens = 85 + 170 * 4 = 765 per image
+    openai_screenshot_per_scenario = 765
+    openai_total_screenshot = openai_screenshot_per_scenario * num_scenarios
+
+    # Anthropic Claude: pixels / 750
+    # 800 * 600 / 750 = 640 per image
+    anthropic_screenshot_per_scenario = 640
+    anthropic_total_screenshot = anthropic_screenshot_per_scenario * num_scenarios
+
+    def _savings(before, after):
+        saved = before - after
+        pct = saved / before * 100 if before else 0
+        return saved, pct
+
+    openai_saved, openai_pct = _savings(openai_total_screenshot, total_avg_tree)
+    anthropic_saved, anthropic_pct = _savings(anthropic_total_screenshot, total_avg_tree)
+
+    # Pricing (input tokens)
+    openai_price_per_m = 2.50  # GPT-4o
+    anthropic_price_per_m = 3.00  # Claude Sonnet
+
+    openai_cost_before = openai_total_screenshot * openai_price_per_m / 1_000_000
+    openai_cost_after = total_avg_tree * openai_price_per_m / 1_000_000
+    anthropic_cost_before = anthropic_total_screenshot * anthropic_price_per_m / 1_000_000
+    anthropic_cost_after = total_avg_tree * anthropic_price_per_m / 1_000_000
+
+    print("=" * 80)
+    print("  Cloud API Extrapolation (based on avg Ollama tree token measurements)")
+    print("=" * 80)
+    avg_str = f"{avg_tree_tokens_per_scenario:.0f}"
+    print(f"\n  Avg tree tokens/scenario across Ollama models: {avg_str}")
+    print(f"  Total tree tokens ({num_scenarios} scenarios): {total_avg_tree:.0f}")
+    print()
+    hdr = f"  {'Provider':<22} {'Screenshot':>12} {'Tree':>8} {'Savings':>9} {'$/1M saved':>12}"
+    print(hdr)
+    print(f"  {'-' * 22} {'-' * 12} {'-' * 8} {'-' * 9} {'-' * 12}")
+
+    for label, shot_tok, pct, cb, ca in [
+        ("OpenAI GPT-4o", openai_total_screenshot, openai_pct,
+         openai_cost_before, openai_cost_after),
+        ("Anthropic Claude", anthropic_total_screenshot, anthropic_pct,
+         anthropic_cost_before, anthropic_cost_after),
+    ]:
+        saved_per_m = (cb - ca) * 1_000_000
+        print(
+            f"  {label:<22} {shot_tok:>12,} {total_avg_tree:>8.0f}"
+            f" {pct:>8.1f}%  ${saved_per_m:>10,.0f}"
+        )
+
+    print()
+    print("  At-scale (100K UI agent calls/day, 30 days):")
+    print(f"  {'Provider':<22} {'Direct/mo':>12} {'Token0/mo':>12} {'Saved/mo':>12}")
+    print(f"  {'-' * 22} {'-' * 12} {'-' * 12} {'-' * 12}")
+    calls = 100_000 * 30
+    for label, cost_before, cost_after in [
+        ("OpenAI GPT-4o", openai_cost_before, openai_cost_after),
+        ("Anthropic Claude", anthropic_cost_before, anthropic_cost_after),
+    ]:
+        mo_before = cost_before * calls
+        mo_after = cost_after * calls
+        saved_mo = mo_before - mo_after
+        print(f"  {label:<22} ${mo_before:>10,.0f}  ${mo_after:>10,.0f}  ${saved_mo:>10,.0f}")
+
+    print()
+    print("  Notes:")
+    print("  - Screenshot tokens: OpenAI tile formula (85 + 170×tiles), Anthropic w×h/750")
+    print("  - Tree tokens: measured from real Ollama calls — text tokenization is")
+    print("    provider-agnostic (~4 chars/token, consistent across OpenAI/Anthropic/Ollama)")
+    print("  - Image size: 800×600 synthetic screenshots (matches our benchmark)")
     print(f"\n{'=' * 80}\n")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="AX tree routing benchmark against Ollama models"
-    )
+    parser = argparse.ArgumentParser(description="AX tree routing benchmark against Ollama models")
     parser.add_argument(
         "--model", action="append", help="Ollama model(s) to test (can specify multiple)"
     )
     args = parser.parse_args()
 
-    models = args.model or DEFAULT_MODELS
+    models = args.model or VISION_MODELS
     asyncio.run(run_all_benchmarks(models))
 
 
