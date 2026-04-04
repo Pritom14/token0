@@ -210,37 +210,33 @@ Using OpenAI's published token formulas on real images and GPT-4.1 pricing ($2.0
 
 UI agents that send both a screenshot and an accessibility tree can route to the cheaper representation automatically.
 
-**Real Ollama model results** (actual reported prompt_tokens):
+**Ollama model results — 7 vision models, synthetic 800×600 screenshots** (actual reported prompt_tokens):
 
-| Model | Scenario | Screenshot Tokens | Tree Tokens | Savings |
+> Synthetic screenshots: PIL-generated images with drawn UI elements (login form, todo list). Not real browser screenshots — real UIs have more visual complexity, so screenshot token counts would be higher and savings would be larger in practice.
+
+| Model | Screenshot Tokens | Tree Tokens | Savings | Note |
 |---|---|---|---|---|
-| moondream | Login Form | 753 | 79 | **89.5%** |
-| moondream | Todo List | 747 | 89 | **88.1%** |
-| moondream | **Total** | **1,500** | **168** | **88.8%** |
+| granite3.2-vision | 10,328 | 218 | **97.9%** | High-res encoder |
+| moondream | 1,500 | 168 | **88.8%** | |
+| llava:7b | 1,202 | 160 | **86.7%** | |
+| llava-llama3 | 1,201 | 164 | **86.3%** | |
+| minicpm-v | 704 | 128 | **81.8%** | |
+| gemma3:4b | 566 | 145 | **74.4%** | |
+| llama3.2-vision | 46 | 130 | n/a | Ultra-efficient encoder — tree costs more; screenshot wins |
 
-**GPT-4o cost projections** (tile formula):
+**Cloud API extrapolation** (tree tokens from Ollama measurements, screenshot tokens from published formulas, 800×600 image):
 
-| Scenario | Screenshot Tokens | Token0 Tokens | Savings |
-|---|---|---|---|
-| GitHub PR page (Playwright tree) | 2,125 | 132 | **93.8%** |
-| macOS Finder (AXUIElement) | 2,125 | 59 | **97.2%** |
-| 4K screenshot + Finder tree | 8,925 | 59 | **99.3%** |
-| Figma editor (canvas — opaque) | 2,125 | 2,125 | n/a — screenshot kept |
+| Provider | Screenshot Tokens | Tree Tokens (avg) | Savings | At 100K calls/day, saved/mo |
+|---|---|---|---|---|
+| OpenAI GPT-4o | 1,530 | ~80 | **89.6%** | **~$10,282** |
+| Anthropic Claude | 1,280 | ~80 | **87.6%** | **~$10,089** |
 
-**At scale — GitHub PR agent, 100K calls/day:**
-
-| | Direct | Token0 |
-|---|---|---|
-| Per call | $0.0053 | $0.0003 |
-| Monthly | $15,938 | $990 |
-| **Saved** | | **$14,948/mo** |
-
-> Canvas, iframe, and embedded media nodes trigger automatic screenshot fallback. No configuration needed.
+> Tree token counts are text-based and provider-agnostic (~4 chars/token). Screenshot tokens use OpenAI tile formula (85 + 170×tiles) and Anthropic pixel formula (w×h/750). Canvas/iframe nodes trigger automatic screenshot fallback — no configuration needed.
 
 Run benchmarks:
 ```bash
 python -m benchmarks.bench_ax_tree                        # formula-based projections
-python -m benchmarks.bench_ax_tree_models                 # real Ollama model calls
+python -m benchmarks.bench_ax_tree_models                 # all 7 Ollama vision models
 python -m benchmarks.bench_ax_tree_models --model llava:7b --model moondream
 ```
 
