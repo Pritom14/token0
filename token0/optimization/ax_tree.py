@@ -47,12 +47,7 @@ def _normalize_node(node: dict) -> dict:
         # macOS AXUIElement
         return {
             "role": node.get("AXRole", ""),
-            "name": (
-                node.get("AXTitle")
-                or node.get("AXDescription")
-                or node.get("AXValue")
-                or ""
-            ),
+            "name": (node.get("AXTitle") or node.get("AXDescription") or node.get("AXValue") or ""),
             "value": node.get("AXValue", ""),
             "enabled": node.get("AXEnabled", True),
             "children": node.get("AXChildren", []),

@@ -105,7 +105,7 @@ def _optimize_messages(request: ChatRequest, prompt_detail: str):
         has_tree = any(p.type == "accessibility_tree" for p in parts_list)
         has_image = any(p.type == "image_url" for p in parts_list)
         ax_drop_image = False  # True → skip image_url parts (tree wins)
-        ax_drop_tree = False   # True → skip accessibility_tree parts (image wins)
+        ax_drop_tree = False  # True → skip accessibility_tree parts (image wins)
 
         if has_tree and has_image and request.token0_optimize:
             from token0.optimization.ax_tree import has_opaque_nodes
