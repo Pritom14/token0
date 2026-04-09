@@ -1,10 +1,13 @@
+from typing import Literal
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # Storage mode: "lite" (SQLite + in-memory) or "full" (Postgres + Redis + S3)
     # Use "lite" for local dev/testing, "full" for production
-    storage_mode: str = "lite"
+    storage_mode: Literal["lite", "full"] = "lite"
 
     # Database — only needed in full mode
     database_url: str = "postgresql+asyncpg://token0:token0@localhost:5432/token0"
@@ -39,6 +42,20 @@ class Settings(BaseSettings):
     max_image_dimension: int = 1568  # Claude's max before auto-downscale
     jpeg_quality: int = 85
     text_density_threshold: float = 0.52  # Above this → OCR route instead of vision
+
+    @field_validator("text_density_threshold")
+    @classmethod
+    def validate_threshold(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError(f"text_density_threshold must be between 0.0 and 1.0, got {v}")
+        return v
+
+    @field_validator("port")
+    @classmethod
+    def validate_port(cls, v: int) -> int:
+        if not 1 <= v <= 65535:
+            raise ValueError(f"port must be between 1 and 65535, got {v}")
+        return v
 
     @property
     def is_lite(self) -> bool:
