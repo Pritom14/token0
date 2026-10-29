@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from token0.models.request import Message
 from token0.optimization.analyzer import analyze_image
-from token0.optimization.prompt_classifier import classify_prompt_detail, extract_prompt_text
+from token0.optimization.prompt_classifier import classify_messages
 from token0.optimization.router import get_provider_from_model, plan_optimization
 from token0.providers.base import get_cost_per_token
 
@@ -59,8 +59,8 @@ async def estimate(request: EstimateRequest) -> EstimateResponse:
         }
         for m in request.messages
     ]
-    prompt_text = extract_prompt_text(messages_as_dicts)
-    prompt_detail = classify_prompt_detail(prompt_text)
+    prompt_detail = classify_messages(messages_as_dicts)
+    ocr_estimated = False
 
     image_estimates: list[ImageEstimate] = []
     skipped_remote = False
@@ -87,6 +87,7 @@ async def estimate(request: EstimateRequest) -> EstimateResponse:
                     prompt_detail=prompt_detail,
                     enable_cascade=False,  # cascade changes model pricing; excluded for clarity
                 )
+                ocr_estimated = ocr_estimated or plan.use_ocr_route
                 cost_per_token = get_cost_per_token(request.model, "input")
                 cost_before = plan.estimated_tokens_before * cost_per_token
                 cost_after = plan.estimated_tokens_after * cost_per_token
@@ -110,9 +111,18 @@ async def estimate(request: EstimateRequest) -> EstimateResponse:
     total_saved_tokens = sum(e.tokens_saved for e in image_estimates)
     total_saved_usd = round(sum(e.cost_saved_usd for e in image_estimates), 6)
 
-    note = None
+    notes = []
     if skipped_remote:
-        note = "Remote image URLs were skipped — provide base64 data URIs for full estimates."
+        notes.append(
+            "Remote image URLs were skipped — provide base64 data URIs for full estimates."
+        )
+    if ocr_estimated:
+        notes.append(
+            "OCR-route figures are approximate (text volume is estimated, not extracted). "
+            "At request time Token0 only uses OCR when the extracted text is cheaper "
+            "than the image."
+        )
+    note = " ".join(notes) or None
 
     return EstimateResponse(
         model=request.model,

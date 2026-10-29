@@ -134,6 +134,7 @@ def plan_optimization(
     detail_override: str | None = None,
     prompt_detail: str = "auto",
     enable_cascade: bool = True,
+    allow_ocr: bool = True,
 ) -> OptimizationPlan:
     """Decide the optimal compression strategy for a given image + target model.
 
@@ -143,6 +144,8 @@ def plan_optimization(
         detail_override: Force 'low' or 'high' detail (user override)
         prompt_detail: Result from prompt classifier ('low', 'high', 'auto')
         enable_cascade: Whether to suggest cheaper models for simple tasks
+        allow_ocr: Set False to plan without the OCR route (fallback after OCR
+            turned out more expensive than the image)
     """
     from token0.config import settings
 
@@ -150,9 +153,13 @@ def plan_optimization(
     plan = OptimizationPlan()
 
     # --- Optimization 1: OCR Route ---
-    if analysis.is_mostly_text:
+    if analysis.is_mostly_text and prompt_detail == "layout":
+        plan.reasons.append(
+            f"text_density={analysis.text_density:.2f} but prompt needs layout — skip OCR"
+        )
+    elif analysis.is_mostly_text and allow_ocr:
         estimated_image_tokens = _estimate_tokens(analysis, provider, "high")
-        estimated_ocr_tokens = 200  # typical OCR text extraction output
+        estimated_ocr_tokens = min(estimate_ocr_tokens(analysis, provider), estimated_image_tokens)
 
         # Some Ollama models encode images with extremely few tokens — far fewer
         # than our estimation formula predicts. For these, OCR text output
@@ -165,10 +172,10 @@ def plan_optimization(
                 f"text_density={analysis.text_density:.2f} but Ollama model — "
                 f"skip OCR (image tokens ~{estimated_image_tokens} likely cheaper than OCR text)"
             )
-        elif estimated_image_tokens <= estimated_ocr_tokens:
+        elif estimated_image_tokens <= OCR_MIN_IMAGE_TOKENS:
             plan.reasons.append(
-                f"text_density={analysis.text_density:.2f} but image tokens "
-                f"({estimated_image_tokens}) ≤ OCR estimate ({estimated_ocr_tokens}) — skip OCR"
+                f"text_density={analysis.text_density:.2f} but image is only "
+                f"{estimated_image_tokens} tokens — skip OCR"
             )
         else:
             plan.use_ocr_route = True
@@ -184,8 +191,14 @@ def plan_optimization(
                 plan.reasons.append(f"cascade → {plan.recommended_model} (text task)")
             return plan
 
+    # Layout prompts (UI / computer-use): the caller maps coordinates the model returns
+    # back onto the original image, so dimensions must not change and detail must stay.
+    keep_dimensions = prompt_detail == "layout"
+    if keep_dimensions:
+        plan.reasons.append("prompt needs layout — keep original dimensions")
+
     # --- Optimization 2: Prompt-Aware Detail Mode (NEW) ---
-    if provider == "openai" and detail_override != "high":
+    if provider == "openai" and detail_override != "high" and not keep_dimensions:
         # Priority: user override > prompt classification > size heuristic
         if detail_override == "low":
             plan.force_detail_low = True
@@ -197,8 +210,26 @@ def plan_optimization(
             plan.force_detail_low = True
             plan.reasons.append("image ≤512px — low detail equivalent")
 
+    # --- Optimization 2b: Low detail only sees 512px — don't upload more ---
+    if plan.force_detail_low and max(analysis.width, analysis.height) > 512:
+        scale = 512 / max(analysis.width, analysis.height)
+        plan.resize = True
+        plan.target_width = max(1, int(analysis.width * scale))
+        plan.target_height = max(1, int(analysis.height * scale))
+        plan.reasons.append(
+            f"low detail → resize {analysis.width}x{analysis.height} "
+            f"→ {plan.target_width}x{plan.target_height}"
+        )
+
     # --- Optimization 3: Tile-Optimized Resize (NEW for OpenAI) ---
-    if provider == "openai" and not plan.force_detail_low:
+    # Skipped for text/detail prompts: shrinking below the provider's working size
+    # (768px short side) makes small print illegible.
+    if (
+        provider == "openai"
+        and not plan.force_detail_low
+        and not keep_dimensions
+        and prompt_detail != "high"
+    ):
         opt_w, opt_h = _tile_optimized_resize(analysis.width, analysis.height)
         # Check if tile-optimized resize saves tiles
         current_tokens = _estimate_tokens(analysis, provider, "high")
@@ -216,7 +247,7 @@ def plan_optimization(
             )
 
     # --- Optimization 4: Standard Smart Resize ---
-    if not plan.resize:
+    if not plan.resize and not keep_dimensions:
         max_dim = settings.max_image_dimension
         if provider == "anthropic":
             max_dim = 1568
@@ -257,6 +288,32 @@ def plan_optimization(
         plan.estimated_tokens_after = plan.estimated_tokens_before
 
     return plan
+
+
+# Below this many image tokens, OCR text can't realistically be cheaper — don't try.
+OCR_MIN_IMAGE_TOKENS = 200
+
+# Text pixels (at the resolution the provider actually processes) per OCR token.
+# Measured on a 200dpi document page (~960) and a 1080p web screenshot (~430);
+# rough by nature — the runtime check in transformer.resolve_ocr() uses the real text.
+OCR_TEXT_PIXELS_PER_TOKEN = 700
+
+
+def _processed_dims(width: int, height: int, provider: str) -> tuple[int, int]:
+    """Approximate dimensions the provider downsamples an image to before tokenizing."""
+    if provider == "openai":
+        scale = min(1.0, 2048 / max(width, height))
+        w, h = width * scale, height * scale
+        scale = min(1.0, 768 / min(w, h))
+        return int(w * scale), int(h * scale)
+    scale = min(1.0, 1568 / max(width, height), (1_150_000 / (width * height)) ** 0.5)
+    return int(width * scale), int(height * scale)
+
+
+def estimate_ocr_tokens(analysis: ImageAnalysis, provider: str = "openai") -> int:
+    """Rough token count of the text OCR would extract, from the text-covered area."""
+    w, h = _processed_dims(analysis.width, analysis.height, provider)
+    return max(30, int(w * h * analysis.text_density / OCR_TEXT_PIXELS_PER_TOKEN))
 
 
 def _estimate_tokens(analysis: ImageAnalysis, provider: str, detail: str = "high") -> int:

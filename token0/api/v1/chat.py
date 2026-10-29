@@ -24,7 +24,7 @@ from token0.optimization.cache import (
     set_cached_response,
 )
 from token0.optimization.prompt_classifier import (
-    classify_prompt_detail,
+    classify_messages,
     extract_prompt_text,
 )
 from token0.optimization.router import (
@@ -32,7 +32,7 @@ from token0.optimization.router import (
     get_provider_from_model,
     plan_optimization,
 )
-from token0.optimization.transformer import transform_image
+from token0.optimization.transformer import resolve_ocr, transform_image
 from token0.optimization.video import process_video
 from token0.providers.anthropic import AnthropicProvider
 from token0.providers.base import BaseProvider, get_cost_per_token
@@ -149,23 +149,30 @@ def _optimize_messages(request: ChatRequest, prompt_detail: str):
                     if first_pil_image is None:
                         first_pil_image = frame_pil
 
-                    frame_plan = plan_optimization(
-                        frame_analysis,
-                        request.model,
-                        detail_override=request.token0_detail_override,
-                        prompt_detail=prompt_detail,
-                        enable_cascade=request.token0_enable_cascade,
+                    def _frame_plan(allow_ocr: bool = True):
+                        return plan_optimization(
+                            frame_analysis,
+                            request.model,
+                            detail_override=request.token0_detail_override,
+                            prompt_detail=prompt_detail,
+                            enable_cascade=request.token0_enable_cascade,
+                            allow_ocr=allow_ocr,
+                        )
+
+                    frame_plan, frame_ocr = resolve_ocr(
+                        _frame_plan(), frame_raw, lambda: _frame_plan(allow_ocr=False)
                     )
                     plans.append(frame_plan)
                     total_tokens_before += frame_plan.estimated_tokens_before
                     total_tokens_after += frame_plan.estimated_tokens_after
 
-                    if frame_plan.use_ocr_route:
-                        result = transform_image(frame_plan, frame_analysis, frame_raw, frame_pil)
+                    if frame_ocr is not None:
                         optimized_parts.append(
                             {
                                 "type": "text",
-                                "text": f"[Extracted text from video frame]:\n{result['content']}",
+                                "text": (
+                                    f"[Extracted text from video frame]:\n{frame_ocr['content']}"
+                                ),
                             }
                         )
                     elif any(
@@ -259,13 +266,17 @@ def _optimize_messages(request: ChatRequest, prompt_detail: str):
                 if first_pil_image is None:
                     first_pil_image = pil_image
 
-                plan = plan_optimization(
-                    analysis,
-                    request.model,
-                    detail_override=request.token0_detail_override,
-                    prompt_detail=prompt_detail,
-                    enable_cascade=request.token0_enable_cascade,
-                )
+                def _plan(allow_ocr: bool = True):
+                    return plan_optimization(
+                        analysis,
+                        request.model,
+                        detail_override=request.token0_detail_override,
+                        prompt_detail=prompt_detail,
+                        enable_cascade=request.token0_enable_cascade,
+                        allow_ocr=allow_ocr,
+                    )
+
+                plan, ocr_result = resolve_ocr(_plan(), raw_bytes, lambda: _plan(allow_ocr=False))
                 plans.append(plan)
 
                 if plan.recommended_model and model_cascaded_to is None:
@@ -276,12 +287,11 @@ def _optimize_messages(request: ChatRequest, prompt_detail: str):
                 total_tokens_after += plan.estimated_tokens_after
                 optimizations_applied.extend(plan.reasons)
 
-                if plan.use_ocr_route:
-                    result = transform_image(plan, analysis, raw_bytes, pil_image)
+                if ocr_result is not None:
                     optimized_parts.append(
                         {
                             "type": "text",
-                            "text": (f"[Extracted text from image]:\n{result['content']}"),
+                            "text": (f"[Extracted text from image]:\n{ocr_result['content']}"),
                         }
                     )
                 elif any([plan.resize, plan.recompress_jpeg, plan.force_detail_low]):
@@ -556,7 +566,11 @@ async def chat_completions(
     prompt_text = extract_prompt_text(
         [{"role": m.role, "content": m.content} for m in request.messages]
     )
-    prompt_detail = classify_prompt_detail(prompt_text) if request.token0_optimize else "auto"
+    prompt_detail = (
+        classify_messages([{"role": m.role, "content": m.content} for m in request.messages])
+        if request.token0_optimize
+        else "auto"
+    )
 
     # --- Step 2: Determine provider ---
     provider_name = get_provider_from_model(request.model)

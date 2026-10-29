@@ -50,7 +50,19 @@ HIGH_DETAIL_PATTERNS = [
     r"\b(small print|fine print|footnote)\b",
 ]
 
+# Patterns that indicate the model must see the image's layout (UI / computer-use
+# agents). OCR loses positions and low detail loses small targets, so neither applies.
+LAYOUT_PATTERNS = [
+    r"\b(click|double[- ]click|right[- ]click|tap|hover|scroll|drag|swipe)\b",
+    r"\b(type into|fill in|fill out|press the|press enter|select the)\b",
+    r"\b(button|checkbox|dropdown|drop-down|text ?box|input field|form field|menu item|tab bar)\b",
+    r"\b(cursor|mouse|coordinates?|bounding box|x,\s*y|pixel position)\b",
+    r"\b(where is|locate|point to|navigate to|go to the)\b",
+    r"\b(screenshot|web ?page|browser|screen|ui element|user interface)\b",
+]
+
 _low_compiled = [re.compile(p, re.IGNORECASE) for p in LOW_DETAIL_PATTERNS]
+_layout_compiled = [re.compile(p, re.IGNORECASE) for p in LAYOUT_PATTERNS]
 _high_compiled = [re.compile(p, re.IGNORECASE) for p in HIGH_DETAIL_PATTERNS]
 
 
@@ -60,12 +72,16 @@ def classify_prompt_detail(prompt: str) -> str:
     Returns:
         'low' — simple task, 85 tokens sufficient
         'high' — complex task, needs full resolution
+        'layout' — UI/agent task: positions matter, never OCR or low detail
         'auto' — uncertain, use default behavior
     """
     if not prompt:
         return "auto"
 
     prompt_lower = prompt.lower().strip()
+
+    if needs_layout(prompt_lower):
+        return "layout"
 
     # Score both directions
     low_score = sum(1 for p in _low_compiled if p.search(prompt_lower))
@@ -84,6 +100,35 @@ def classify_prompt_detail(prompt: str) -> str:
         return "low"
 
     return "auto"
+
+
+def needs_layout(text: str) -> bool:
+    """True if the task depends on where things are in the image (UI / agent actions)."""
+    return any(p.search(text) for p in _layout_compiled)
+
+
+def extract_all_text(messages: list) -> str:
+    """All text across system/user messages — agents often put the task in the system prompt."""
+    chunks = []
+    for msg in messages:
+        content = msg.get("content") if isinstance(msg, dict) else getattr(msg, "content", None)
+        if isinstance(content, str):
+            chunks.append(content)
+        elif isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict):
+                    if part.get("type") == "text":
+                        chunks.append(part.get("text") or "")
+                elif getattr(part, "type", None) == "text":
+                    chunks.append(getattr(part, "text", "") or "")
+    return "\n".join(chunks)
+
+
+def classify_messages(messages: list) -> str:
+    """Classify detail need for a request; layout cues anywhere in the conversation win."""
+    if needs_layout(extract_all_text(messages)):
+        return "layout"
+    return classify_prompt_detail(extract_prompt_text(messages))
 
 
 def extract_prompt_text(messages: list) -> str:

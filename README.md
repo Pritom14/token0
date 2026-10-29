@@ -22,6 +22,21 @@ Token0 fixes this. It sits between your app and the LLM, analyzes every image an
 
 ---
 
+## When Token0 Helps (Measured)
+
+Real requests through the LiteLLM Proxy integration, GPT-4.1 token formulas:
+
+| Request | What the provider receives | Image tokens |
+|---|---|---|
+| "Classify this image", 4000×3000 photo | 512×384, low detail (40 KB instead of 1.4 MB) | 765 → 85 |
+| "Extract all text", 200dpi document page | OCR text (verified cheaper than the image) | 1,105 → 815 |
+| "Read the text on this page", dense 1080p screenshot | image — OCR text would cost 1,513 | 1,105 → 1,105 |
+| "Click the add to cart button", 1080p screenshot | original dimensions kept, PNG → JPEG | 1,105 → 1,105 |
+
+- **Biggest wins:** simple tasks on large photos (classify, yes/no, count) and document pages.
+- **No token savings on agent screenshots, by design:** UI/computer-use prompts keep the original dimensions so the coordinates the model returns still map onto the screen; only the upload gets smaller.
+- **OCR is verified, not assumed:** Token0 extracts the text, and if it would cost more than the (optimized) image, it sends the image instead. OCR runs on CPU via EasyOCR and adds seconds per image, so it suits batch/document pipelines more than latency-sensitive calls.
+
 ## How It Works
 
 ```
@@ -480,16 +495,14 @@ for chunk in stream:
 
 ### Use With LiteLLM
 
-Already using [LiteLLM](https://github.com/BerriAI/litellm)? Add Token0 as a callback hook — no proxy needed:
+Already using [LiteLLM](https://github.com/BerriAI/litellm)?
+
+**SDK** — swap the import; same arguments as `litellm.completion` / `litellm.acompletion`:
 
 ```python
-import litellm
-from token0.litellm_hook import Token0Hook
+from token0.litellm_hook import completion  # or acompletion
 
-litellm.callbacks = [Token0Hook()]
-
-# All your existing litellm calls now get image optimization for free
-response = litellm.completion(
+response = completion(
     model="gpt-4.1",
     messages=[{
         "role": "user",
@@ -500,15 +513,16 @@ response = litellm.completion(
     }]
 )
 
-# Stats available in response metadata
-# response._hidden_params["metadata"]["token0"]["tokens_saved"]
+# Stats: response._hidden_params["token0"]["tokens_saved"]
 ```
 
-Or in LiteLLM proxy `config.yaml`:
+(Registering `Token0Hook()` in `litellm.callbacks` does **not** work with the SDK — LiteLLM only runs pre-call hooks inside the proxy.)
+
+**Proxy** — in `config.yaml`:
 
 ```yaml
 litellm_settings:
-  callbacks: ["token0.litellm_hook.Token0Hook"]
+  callbacks: ["token0.litellm_hook.proxy_handler_instance"]
 ```
 
 ### Use With LangChain

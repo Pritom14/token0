@@ -13,15 +13,14 @@ changes beyond adding the hook.
 pip install token0
 ```
 
-**2. Add the hook — LiteLLM SDK**
+**2. LiteLLM SDK — use the drop-in wrapper**
+
+LiteLLM only runs pre-call hooks inside the proxy, so for the SDK swap the import:
 
 ```python
-import litellm
-from token0.litellm_hook import Token0Hook
+from token0.litellm_hook import completion  # or acompletion — same args as litellm's
 
-litellm.callbacks = [Token0Hook()]
-
-response = litellm.completion(
+response = completion(
     model="gpt-4o",
     messages=[{
         "role": "user",
@@ -33,15 +32,14 @@ response = litellm.completion(
 )
 
 # Check savings
-print(response._hidden_params["metadata"]["token0"])
-# {"tokens_saved": 1020, "optimizations": ["resize 4000x3000→1568x1176", "prompt-aware→low detail"]}
+print(response._hidden_params["token0"])
 ```
 
 **2b. Add the hook — LiteLLM Proxy (`config.yaml`)**
 
 ```yaml
 litellm_settings:
-  callbacks: ["token0.litellm_hook.Token0Hook"]
+  callbacks: ["token0.litellm_hook.proxy_handler_instance"]
 ```
 
 Then install Token0 in the same environment as the proxy:
@@ -57,12 +55,14 @@ pip install token0
 | `enable_cascade` | `bool` | `False` | Auto-route simple tasks to cheaper models (GPT-4o → GPT-4o-mini) |
 | `detail_override` | `str \| None` | `None` | Force `"low"` or `"high"` detail mode for all images (OpenAI only) |
 
-```python
-# Enable model cascade
-litellm.callbacks = [Token0Hook(enable_cascade=True)]
+SDK wrapper: pass `token0_enable_cascade=True` / `token0_detail="low"` to `completion()`.
+Proxy: subclass or instantiate your own hook in a module and point `callbacks` at it:
 
-# Force low detail (fast, cheap — for classification tasks)
-litellm.callbacks = [Token0Hook(detail_override="low")]
+```python
+# my_callbacks.py  →  callbacks: ["my_callbacks.token0_hook"]
+from token0.litellm_hook import Token0Hook
+
+token0_hook = Token0Hook(enable_cascade=True)
 ```
 
 ## What Gets Optimized

@@ -76,12 +76,13 @@ class TestOCRRoute:
         assert plan.use_ocr_route is False
 
     def test_ocr_route_estimates_low_tokens(self):
-        analysis = _make_analysis(width=1920, height=1080, text_density=0.8, is_mostly_text=True)
+        # 200dpi A4 page: measured ~660 OCR tokens vs 1105 image tokens on gpt-4o
+        analysis = _make_analysis(width=1654, height=2339, text_density=0.76, is_mostly_text=True)
         plan = plan_optimization(analysis, "gpt-4o")
 
         assert plan.use_ocr_route is True
-        assert plan.estimated_tokens_after == 200  # rough text estimate
-        assert plan.estimated_tokens_before > plan.estimated_tokens_after
+        # rough text-volume estimate; the real figure is set after OCR runs
+        assert 0 < plan.estimated_tokens_after < plan.estimated_tokens_before
 
 
 class TestResize:
@@ -242,8 +243,8 @@ class TestCombinedOptimizations:
 
 class TestTokenEstimates:
     def test_savings_positive_for_ocr_route(self):
-        # OCR route always saves tokens — text extraction is ~200 tokens vs 1000+ for vision
-        analysis = _make_analysis(width=1920, height=1080, text_density=0.8, is_mostly_text=True)
+        # Document page: text extraction is cheaper than the image
+        analysis = _make_analysis(width=1654, height=2339, text_density=0.76, is_mostly_text=True)
         plan = plan_optimization(analysis, "claude-sonnet-4-6")
 
         assert plan.estimated_tokens_before > 0
@@ -260,13 +261,46 @@ class TestTokenEstimates:
         assert plan.estimated_tokens_before >= plan.estimated_tokens_after
 
     def test_savings_positive_for_ocr(self):
-        analysis = _make_analysis(width=1920, height=1080, text_density=0.8, is_mostly_text=True)
+        analysis = _make_analysis(width=1654, height=2339, text_density=0.76, is_mostly_text=True)
         plan = plan_optimization(analysis, "gpt-4o")
 
         assert plan.estimated_tokens_before > plan.estimated_tokens_after
+
+    def test_dense_screenshot_ocr_never_claims_more_than_image(self):
+        # A dense 1080p page screenshot measured 1457 OCR tokens vs 1105 image
+        # tokens; the estimate must not promise savings the runtime can't deliver.
+        analysis = _make_analysis(width=1920, height=1080, text_density=0.8, is_mostly_text=True)
+        plan = plan_optimization(analysis, "gpt-4o")
+
+        assert plan.estimated_tokens_after <= plan.estimated_tokens_before
 
     def test_no_savings_for_already_small_jpeg(self):
         analysis = _make_analysis(width=600, height=400, fmt="jpeg")
         plan = plan_optimization(analysis, "claude-sonnet-4-6")
 
         assert plan.estimated_tokens_before == plan.estimated_tokens_after
+
+
+class TestPromptSafety:
+    def test_layout_prompt_keeps_dimensions(self):
+        analysis = _make_analysis(width=1920, height=1080, fmt="png")
+        plan = plan_optimization(analysis, "gpt-4o", prompt_detail="layout")
+
+        assert plan.resize is False
+        assert plan.force_detail_low is False
+        assert plan.use_ocr_route is False
+
+    def test_text_prompt_not_tile_shrunk(self):
+        analysis = _make_analysis(width=1654, height=2339, fmt="png")
+        plan = plan_optimization(analysis, "gpt-4o", prompt_detail="high")
+
+        assert not plan.resize or min(plan.target_width, plan.target_height) >= 768
+
+    def test_low_detail_uploads_at_most_512px(self):
+        analysis = _make_analysis(width=4000, height=3000, fmt="jpeg")
+        plan = plan_optimization(analysis, "gpt-4o", prompt_detail="low")
+
+        assert plan.force_detail_low is True
+        assert plan.resize is True
+        assert max(plan.target_width, plan.target_height) == 512
+        assert plan.estimated_tokens_after == 85
