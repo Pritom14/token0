@@ -2,6 +2,7 @@
 
 import base64
 import io
+import math
 
 import easyocr
 from PIL import Image
@@ -79,6 +80,39 @@ def transform_image(
     }
 
 
+def estimate_text_tokens(text: str) -> int:
+    """Conservative token count for English text (~3.5 chars/token) plus prompt prefix."""
+    return math.ceil(len(text) / 3.5) + 10
+
+
+def resolve_ocr(
+    plan: OptimizationPlan, raw_bytes: bytes, replan
+) -> tuple[OptimizationPlan, dict | None]:
+    """Run OCR for an OCR-route plan and keep it only if the text is actually cheaper.
+
+    `replan()` must return the plan computed with allow_ocr=False. Returns the plan to
+    use and, if OCR won, the extracted-text result (so callers don't OCR twice).
+    """
+    if not plan.use_ocr_route:
+        return plan, None
+    result = _ocr_extract(raw_bytes)
+    text = result.get("content", "")
+    fallback = replan()
+    if not result.get("detected"):
+        fallback.reasons.append("OCR found no text — sent image instead")
+        return fallback, None
+    ocr_tokens = estimate_text_tokens(text)
+    if ocr_tokens >= fallback.estimated_tokens_after:
+        image_tokens = fallback.estimated_tokens_after
+        fallback.reasons.append(
+            f"OCR text ~{ocr_tokens} tokens ≥ image {image_tokens} — sent image instead"
+        )
+        return fallback, None
+    plan.estimated_tokens_after = ocr_tokens
+    plan.reasons.append(f"OCR text ~{ocr_tokens} tokens (verified)")
+    return plan, result
+
+
 def _ocr_extract(raw_bytes: bytes) -> dict:
     """Extract text from image using EasyOCR."""
     reader = _get_ocr_reader()
@@ -87,4 +121,5 @@ def _ocr_extract(raw_bytes: bytes) -> dict:
     return {
         "type": "text",
         "content": text,
+        "detected": bool(results),
     }

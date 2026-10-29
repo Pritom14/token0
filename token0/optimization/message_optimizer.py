@@ -6,10 +6,10 @@ Used by both litellm_hook.py and langchain_callback.py.
 import logging
 
 from token0.optimization.analyzer import analyze_image
-from token0.optimization.prompt_classifier import extract_prompt_text
+from token0.optimization.prompt_classifier import classify_messages, extract_prompt_text
 from token0.optimization.router import plan_optimization
 from token0.optimization.saliency import apply_saliency_crop, detect_roi
-from token0.optimization.transformer import transform_image
+from token0.optimization.transformer import resolve_ocr, transform_image
 
 logger = logging.getLogger("token0.optimizer")
 
@@ -30,6 +30,7 @@ def optimize_messages(
     optimizations = []
     recommended_model = None
     prompt_text = extract_prompt_text(messages)
+    prompt_detail = classify_messages(messages)
 
     for msg in messages:
         content = msg.get("content")
@@ -103,12 +104,17 @@ def optimize_messages(
                     optimizations.append(f"saliency crop ({kw!r}: {pct:.0%} pixels removed)")
                     logger.debug("token0: saliency crop on %r, savings=%.0f%%", kw, pct * 100)
 
-                plan = plan_optimization(
-                    analysis,
-                    model,
-                    detail_override=detail_override,
-                    enable_cascade=enable_cascade,
-                )
+                def _plan(allow_ocr: bool = True):
+                    return plan_optimization(
+                        analysis,
+                        model,
+                        detail_override=detail_override,
+                        prompt_detail=prompt_detail,
+                        enable_cascade=enable_cascade,
+                        allow_ocr=allow_ocr,
+                    )
+
+                plan, ocr_result = resolve_ocr(_plan(), raw_bytes, lambda: _plan(allow_ocr=False))
 
                 total_before += plan.estimated_tokens_before
                 total_after += plan.estimated_tokens_after
@@ -117,12 +123,11 @@ def optimize_messages(
                 if plan.recommended_model and recommended_model is None:
                     recommended_model = plan.recommended_model
 
-                if plan.use_ocr_route:
-                    result = transform_image(plan, analysis, raw_bytes, pil_image)
+                if ocr_result is not None:
                     opt_parts.append(
                         {
                             "type": "text",
-                            "text": f"[Extracted text from image]:\n{result['content']}",
+                            "text": f"[Extracted text from image]:\n{ocr_result['content']}",
                         }
                     )
                 elif any([plan.resize, plan.recompress_jpeg, plan.force_detail_low]):

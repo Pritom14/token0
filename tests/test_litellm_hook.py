@@ -40,8 +40,15 @@ class TestOptimizeMessages:
         parts = optimized[0]["content"]
         assert any(p.get("type") == "image_url" for p in parts)
 
-    def test_text_heavy_image_ocr_routed(self):
-        """Text-heavy images get OCR routed."""
+    def test_text_heavy_image_ocr_routed(self, monkeypatch):
+        """Text-heavy images get OCR routed when the extracted text is cheaper."""
+        from token0.optimization import transformer
+
+        monkeypatch.setattr(
+            transformer,
+            "_ocr_extract",
+            lambda raw: {"type": "text", "content": "Invoice 42 total 1,299", "detected": True},
+        )
         _, data_uri = make_text_image(800, 600, lines=25, fmt="PNG")
         messages = [
             {
@@ -202,3 +209,64 @@ class TestToken0HookIntegration:
         )
 
         assert result["metadata"]["token0"]["tokens_saved"] == 0
+
+
+class TestLiteLLMEntryPoints:
+    def test_proxy_instance_exported(self):
+        from token0.litellm_hook import Token0Hook, proxy_handler_instance
+
+        assert isinstance(proxy_handler_instance, Token0Hook)
+
+    @pytest.mark.asyncio
+    async def test_hook_runs_for_proxy_acompletion(self):
+        """LiteLLM Proxy calls the hook with call_type='acompletion'."""
+        from token0.litellm_hook import Token0Hook
+
+        _, uri = make_image(4000, 3000, fmt="JPEG")
+        data = {
+            "model": "gpt-4o",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Classify this image"},
+                        {"type": "image_url", "image_url": {"url": uri}},
+                    ],
+                }
+            ],
+        }
+        out = await Token0Hook().async_pre_call_hook(None, None, data, "acompletion")
+        assert out["metadata"]["token0"]["tokens_saved"] > 0
+
+    def test_sdk_completion_wrapper_optimizes(self):
+        """litellm.completion never runs pre-call hooks; the wrapper must optimize itself."""
+        import litellm
+
+        from token0.litellm_hook import completion
+
+        seen = {}
+        original = litellm.completion
+
+        def fake_completion(**kwargs):
+            seen.update(kwargs)
+            return original(**kwargs, mock_response="ok")
+
+        _, uri = make_image(4000, 3000, fmt="JPEG")
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Classify this image"},
+                    {"type": "image_url", "image_url": {"url": uri}},
+                ],
+            }
+        ]
+        litellm.completion = fake_completion
+        try:
+            response = completion(model="gpt-4o", messages=messages)
+        finally:
+            litellm.completion = original
+        image_part = seen["messages"][0]["content"][1]
+        assert image_part["image_url"]["url"] != uri
+        assert image_part["image_url"]["detail"] == "low"
+        assert response._hidden_params["token0"]["tokens_saved"] > 0
