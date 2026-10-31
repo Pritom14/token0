@@ -3,6 +3,7 @@
 import base64
 import io
 import math
+import re
 from dataclasses import dataclass, field
 
 import cv2
@@ -70,22 +71,65 @@ def estimate_openai_tokens(width: int, height: int, detail: str = "high") -> int
     return 85 + (170 * total_tiles)
 
 
-def estimate_anthropic_tokens(width: int, height: int) -> int:
-    """Estimate token cost for Claude Vision: (width * height) / 750."""
-    # Claude auto-downscales if longest edge > 1568px or total > 1.15MP
-    max_edge = max(width, height)
-    if max_edge > 1568:
-        scale = 1568 / max_edge
-        width = int(width * scale)
-        height = int(height * scale)
+# Claude image limits per resolution tier: (max long edge px, max visual tokens).
+# https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size
+CLAUDE_STANDARD_LIMITS = (1568, 1568)
+CLAUDE_HIGH_RES_LIMITS = (2576, 4784)  # Claude 4.7 and later
 
-    total_pixels = width * height
-    if total_pixels > 1_150_000:
-        scale = math.sqrt(1_150_000 / total_pixels)
-        width = int(width * scale)
-        height = int(height * scale)
+_CLAUDE_VERSION_RE = re.compile(r"claude-(?:opus|sonnet|haiku)-(\d+)(?:[-.](\d{1,2}))?(?!\d)")
 
-    return max(1, (width * height) // 750)
+
+def claude_image_limits(model: str | None = None) -> tuple[int, int]:
+    """Edge and visual-token limits for a Claude model; standard tier if unknown."""
+    if not model:
+        return CLAUDE_STANDARD_LIMITS
+    name = model.lower()
+    if "claude-fable" in name or "claude-mythos" in name:
+        return CLAUDE_HIGH_RES_LIMITS
+    m = _CLAUDE_VERSION_RE.search(name)
+    if m and (int(m.group(1)), int(m.group(2) or 0)) >= (4, 7):
+        return CLAUDE_HIGH_RES_LIMITS
+    return CLAUDE_STANDARD_LIMITS
+
+
+def claude_visual_tokens(width: int, height: int) -> int:
+    """One visual token per 28x28 patch."""
+    return math.ceil(width / 28) * math.ceil(height / 28)
+
+
+def claude_resized_size(
+    width: int, height: int, max_edge: int = 1568, max_tokens: int = 1568
+) -> tuple[int, int]:
+    """The size Claude downscales an image to, per Anthropic's reference implementation."""
+
+    def fits(w: int, h: int) -> bool:
+        return (
+            math.ceil(w / 28) * 28 <= max_edge
+            and math.ceil(h / 28) * 28 <= max_edge
+            and claude_visual_tokens(w, h) <= max_tokens
+        )
+
+    if fits(width, height):
+        return width, height
+    if height > width:
+        h, w = claude_resized_size(height, width, max_edge, max_tokens)
+        return w, h
+
+    aspect_ratio = width / height
+    lo, hi = 1, width  # lo always fits; hi never fits
+    while lo + 1 < hi:
+        mid = (lo + hi) // 2
+        if fits(mid, max(round(mid / aspect_ratio), 1)):
+            lo = mid
+        else:
+            hi = mid
+    return lo, max(round(lo / aspect_ratio), 1)
+
+
+def estimate_anthropic_tokens(width: int, height: int, model: str | None = None) -> int:
+    """Estimate token cost for Claude Vision: ceil(w/28) x ceil(h/28) after downscaling."""
+    w, h = claude_resized_size(width, height, *claude_image_limits(model))
+    return claude_visual_tokens(w, h)
 
 
 def detect_text_density(pil_image: Image.Image) -> float:

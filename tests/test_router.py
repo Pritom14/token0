@@ -108,11 +108,18 @@ class TestResize:
 
         assert plan.resize is False
 
-    def test_exact_max_not_resized(self):
-        analysis = _make_analysis(width=1568, height=1000)
+    def test_within_token_budget_not_resized(self):
+        analysis = _make_analysis(width=1092, height=1092)
         plan = plan_optimization(analysis, "claude-sonnet-4-6")
 
         assert plan.resize is False
+
+    def test_under_edge_but_over_token_budget_resized(self):
+        # 1568x1000 is 2016 visual tokens, over the standard tier's 1568.
+        analysis = _make_analysis(width=1568, height=1000)
+        plan = plan_optimization(analysis, "claude-sonnet-4-6")
+
+        assert (plan.target_width, plan.target_height) == (1372, 875)
 
     def test_resize_maintains_aspect_ratio(self):
         analysis = _make_analysis(width=4000, height=2000)
@@ -132,6 +139,37 @@ class TestResize:
 
         assert plan.resize is True
         assert plan.estimated_tokens_after <= plan.estimated_tokens_before
+
+    def test_anthropic_resize_matches_claude_downscale(self):
+        # Standard tier: 1920x1080 goes to 1456x819 (token budget), not 1568x882.
+        analysis = _make_analysis(width=1920, height=1080)
+        plan = plan_optimization(analysis, "claude-sonnet-4-6")
+        assert (plan.target_width, plan.target_height) == (1456, 819)
+        assert plan.estimated_tokens_after == plan.estimated_tokens_before == 1560
+
+    def test_high_res_model_keeps_full_resolution(self):
+        analysis = _make_analysis(width=1920, height=1080)
+        plan = plan_optimization(analysis, "claude-opus-4-7")
+        assert plan.resize is False
+        assert plan.estimated_tokens_before == 2691
+
+    def test_high_res_model_resizes_to_its_own_cap(self):
+        analysis = _make_analysis(width=3840, height=2160)
+        plan = plan_optimization(analysis, "claude-opus-4-7")
+        assert (plan.target_width, plan.target_height) == (2576, 1449)
+        assert plan.estimated_tokens_after == 4784
+
+    def test_high_res_model_simple_prompt_uses_standard_size(self):
+        analysis = _make_analysis(width=1920, height=1080)
+        plan = plan_optimization(analysis, "claude-opus-4-7", prompt_detail="low")
+        assert (plan.target_width, plan.target_height) == (1456, 819)
+        assert plan.estimated_tokens_before == 2691
+        assert plan.estimated_tokens_after == 1560
+
+    def test_high_res_model_layout_prompt_keeps_dimensions(self):
+        analysis = _make_analysis(width=3840, height=2160)
+        plan = plan_optimization(analysis, "claude-opus-4-7", prompt_detail="layout")
+        assert plan.resize is False
 
     def test_resize_openai_may_not_reduce_tokens(self):
         # OpenAI internally downscales too, so pre-resize may not change token count
