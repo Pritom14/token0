@@ -101,6 +101,10 @@ def resolve_ocr(
     if not result.get("detected"):
         fallback.reasons.append("OCR found no text — sent image instead")
         return fallback, None
+    low_share = result.get("low_confidence_share", 0.0)
+    if low_share > OCR_MAX_LOW_CONFIDENCE_SHARE:
+        fallback.reasons.append(f"OCR unsure on {low_share:.0%} of text — sent image instead")
+        return fallback, None
     ocr_tokens = estimate_text_tokens(text)
     if ocr_tokens >= fallback.estimated_tokens_after:
         image_tokens = fallback.estimated_tokens_after
@@ -113,13 +117,41 @@ def resolve_ocr(
     return plan, result
 
 
+# EasyOCR boxes below this confidence are likely misreads. If too many boxes in
+# an image are, the text isn't trustworthy enough to replace the image.
+OCR_LOW_CONFIDENCE = 0.5
+OCR_MAX_LOW_CONFIDENCE_SHARE = 0.1
+
+
+def _boxes_to_lines(results: list) -> str:
+    """Group OCR boxes into lines by vertical position so table rows stay rows."""
+    lines: list[dict] = []
+    for points, text, _conf in sorted(results, key=lambda r: _center_y(r[0])):
+        ys = [p[1] for p in points]
+        cy, h = _center_y(points), max(ys) - min(ys)
+        if lines and abs(cy - lines[-1]["cy"]) < 0.5 * max(h, lines[-1]["h"]):
+            line = lines[-1]
+            line["boxes"].append((min(p[0] for p in points), text))
+            line["cy"] += (cy - line["cy"]) / len(line["boxes"])
+        else:
+            lines.append({"cy": cy, "h": h, "boxes": [(min(p[0] for p in points), text)]})
+    return "\n".join(" ".join(t for _x, t in sorted(line["boxes"])) for line in lines)
+
+
+def _center_y(points) -> float:
+    ys = [p[1] for p in points]
+    return (min(ys) + max(ys)) / 2
+
+
 def _ocr_extract(raw_bytes: bytes) -> dict:
-    """Extract text from image using EasyOCR."""
+    """Extract text from image using EasyOCR, one output line per visual line."""
     reader = _get_ocr_reader()
-    results = reader.readtext(raw_bytes, detail=0, paragraph=True)
-    text = "\n".join(results) if results else "[No text detected in image]"
+    results = reader.readtext(raw_bytes)
+    text = _boxes_to_lines(results) if results else "[No text detected in image]"
+    low = sum(conf < OCR_LOW_CONFIDENCE for _p, _t, conf in results)
     return {
         "type": "text",
         "content": text,
         "detected": bool(results),
+        "low_confidence_share": low / len(results) if results else 0.0,
     }
