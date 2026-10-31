@@ -158,8 +158,10 @@ def plan_optimization(
             f"text_density={analysis.text_density:.2f} but prompt needs layout — skip OCR"
         )
     elif analysis.is_mostly_text and allow_ocr:
-        estimated_image_tokens = _estimate_tokens(analysis, provider, "high")
-        estimated_ocr_tokens = min(estimate_ocr_tokens(analysis, provider), estimated_image_tokens)
+        estimated_image_tokens = _estimate_tokens(analysis, provider, "high", model)
+        estimated_ocr_tokens = min(
+            estimate_ocr_tokens(analysis, provider, model), estimated_image_tokens
+        )
 
         # Some Ollama models encode images with extremely few tokens — far fewer
         # than our estimation formula predicts. For these, OCR text output
@@ -232,7 +234,7 @@ def plan_optimization(
     ):
         opt_w, opt_h = _tile_optimized_resize(analysis.width, analysis.height)
         # Check if tile-optimized resize saves tiles
-        current_tokens = _estimate_tokens(analysis, provider, "high")
+        current_tokens = _estimate_tokens(analysis, provider, "high", model)
         from token0.optimization.analyzer import estimate_openai_tokens
 
         optimized_tokens = estimate_openai_tokens(opt_w, opt_h, "high")
@@ -247,11 +249,28 @@ def plan_optimization(
             )
 
     # --- Optimization 4: Standard Smart Resize ---
-    if not plan.resize and not keep_dimensions:
+    if not plan.resize and not keep_dimensions and provider == "anthropic":
+        from token0.optimization.analyzer import (
+            CLAUDE_STANDARD_LIMITS,
+            claude_image_limits,
+            claude_resized_size,
+        )
+
+        limits = claude_image_limits(model)
+        reason = ""
+        if limits != CLAUDE_STANDARD_LIMITS and prompt_detail == "low":
+            # High-res tier costs up to ~3x the tokens; a simple prompt doesn't need it.
+            limits, reason = CLAUDE_STANDARD_LIMITS, " (simple prompt, standard-tier size)"
+        target_w, target_h = claude_resized_size(analysis.width, analysis.height, *limits)
+        if (target_w, target_h) != (analysis.width, analysis.height):
+            plan.resize = True
+            plan.target_width, plan.target_height = target_w, target_h
+            plan.reasons.append(
+                f"resize {analysis.width}x{analysis.height} → {target_w}x{target_h}{reason}"
+            )
+    elif not plan.resize and not keep_dimensions:
         max_dim = settings.max_image_dimension
-        if provider == "anthropic":
-            max_dim = 1568
-        elif provider == "openai":
+        if provider == "openai":
             max_dim = 2048
 
         if max(analysis.width, analysis.height) > max_dim:
@@ -276,13 +295,13 @@ def plan_optimization(
         plan.reasons.append(f"cascade → {plan.recommended_model} (simple task)")
 
     # Calculate token estimates
-    plan.estimated_tokens_before = _estimate_tokens(analysis, provider, "high")
+    plan.estimated_tokens_before = _estimate_tokens(analysis, provider, "high", model)
 
     if plan.force_detail_low:
         plan.estimated_tokens_after = 85
     elif plan.resize:
         plan.estimated_tokens_after = _estimate_tokens_for_dims(
-            plan.target_width, plan.target_height, provider
+            plan.target_width, plan.target_height, provider, model
         )
     else:
         plan.estimated_tokens_after = plan.estimated_tokens_before
@@ -299,40 +318,51 @@ OCR_MIN_IMAGE_TOKENS = 200
 OCR_TEXT_PIXELS_PER_TOKEN = 700
 
 
-def _processed_dims(width: int, height: int, provider: str) -> tuple[int, int]:
+def _processed_dims(
+    width: int, height: int, provider: str, model: str | None = None
+) -> tuple[int, int]:
     """Approximate dimensions the provider downsamples an image to before tokenizing."""
     if provider == "openai":
         scale = min(1.0, 2048 / max(width, height))
         w, h = width * scale, height * scale
         scale = min(1.0, 768 / min(w, h))
         return int(w * scale), int(h * scale)
-    scale = min(1.0, 1568 / max(width, height), (1_150_000 / (width * height)) ** 0.5)
-    return int(width * scale), int(height * scale)
+    from token0.optimization.analyzer import claude_image_limits, claude_resized_size
+
+    return claude_resized_size(width, height, *claude_image_limits(model))
 
 
-def estimate_ocr_tokens(analysis: ImageAnalysis, provider: str = "openai") -> int:
+def estimate_ocr_tokens(
+    analysis: ImageAnalysis, provider: str = "openai", model: str | None = None
+) -> int:
     """Rough token count of the text OCR would extract, from the text-covered area."""
-    w, h = _processed_dims(analysis.width, analysis.height, provider)
+    w, h = _processed_dims(analysis.width, analysis.height, provider, model)
     return max(30, int(w * h * analysis.text_density / OCR_TEXT_PIXELS_PER_TOKEN))
 
 
-def _estimate_tokens(analysis: ImageAnalysis, provider: str, detail: str = "high") -> int:
+def _estimate_tokens(
+    analysis: ImageAnalysis, provider: str, detail: str = "high", model: str | None = None
+) -> int:
+    from token0.optimization.analyzer import estimate_anthropic_tokens
+
     if provider == "openai":
         if detail == "low":
             return analysis.estimated_tokens_openai_low
         return analysis.estimated_tokens_openai_high
-    elif provider == "anthropic":
-        return analysis.estimated_tokens_anthropic
+    elif provider == "anthropic" and model:
+        return estimate_anthropic_tokens(analysis.width, analysis.height, model)
     else:
         return analysis.estimated_tokens_anthropic
 
 
-def _estimate_tokens_for_dims(width: int, height: int, provider: str) -> int:
+def _estimate_tokens_for_dims(
+    width: int, height: int, provider: str, model: str | None = None
+) -> int:
     from token0.optimization.analyzer import estimate_anthropic_tokens, estimate_openai_tokens
 
     if provider == "openai":
         return estimate_openai_tokens(width, height, "high")
     elif provider == "anthropic":
-        return estimate_anthropic_tokens(width, height)
+        return estimate_anthropic_tokens(width, height, model)
     else:
         return estimate_anthropic_tokens(width, height)

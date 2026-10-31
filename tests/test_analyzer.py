@@ -1,10 +1,15 @@
 """Tests for src/optimization/analyzer.py"""
 
+import pytest
 from PIL import Image
 
 from tests.conftest import make_text_image
 from token0.optimization.analyzer import (
+    CLAUDE_HIGH_RES_LIMITS,
+    CLAUDE_STANDARD_LIMITS,
     analyze_image,
+    claude_image_limits,
+    claude_resized_size,
     decode_image,
     detect_text_density,
     estimate_anthropic_tokens,
@@ -68,38 +73,74 @@ class TestEstimateOpenAITokens:
 
 
 class TestEstimateAnthropicTokens:
-    def test_small_image(self):
-        # 200x200 = 40000 / 750 = 53
-        tokens = estimate_anthropic_tokens(200, 200)
-        assert tokens == 53
+    # Expected values are the table in Anthropic's vision docs.
+    @pytest.mark.parametrize(
+        "w,h,standard,high_res",
+        [
+            (200, 200, 64, 64),
+            (1000, 1000, 1296, 1296),
+            (1092, 1092, 1521, 1521),
+            (1920, 1080, 1560, 2691),
+            (2000, 1500, 1564, 3888),
+            (3840, 2160, 1560, 4784),
+        ],
+    )
+    def test_matches_docs_table(self, w, h, standard, high_res):
+        assert estimate_anthropic_tokens(w, h) == standard
+        assert estimate_anthropic_tokens(w, h, "claude-sonnet-4-6") == standard
+        assert estimate_anthropic_tokens(w, h, "claude-opus-4-7") == high_res
 
-    def test_medium_image(self):
-        # 1000x1000 = 1000000 / 750 = 1333
-        tokens = estimate_anthropic_tokens(1000, 1000)
-        assert tokens == 1333
-
-    def test_large_image_downscaled(self):
-        # 4000x3000 → longest edge 4000 > 1568, scale: 1568/4000 = 0.392
-        # New dims: 1568x1176 = 1843968 pixels
-        # But also > 1.15MP, so scale again: sqrt(1150000/1843968) ≈ 0.789
-        # Final: ~1238x928 = 1148864 / 750 = 1531
-        tokens = estimate_anthropic_tokens(4000, 3000)
-        assert tokens > 0
-        # Should be less than unscaled: 4000*3000/750 = 16000
-        assert tokens < 16000
-        # Should be close to 1.15MP / 750 ≈ 1533
-        assert 1400 < tokens < 1600
-
-    def test_exact_max_no_downscale(self):
-        # 1568x1000 = 1568000 pixels → > 1.15MP, will get downscaled
-        tokens = estimate_anthropic_tokens(1568, 1000)
-        # After megapixel scaling: sqrt(1150000/1568000) ≈ 0.856
-        # ~1342x856 = 1148752 / 750 ≈ 1531
-        assert tokens > 0
+    @pytest.mark.parametrize(
+        "w,h,limits,expected",
+        [
+            (1920, 1080, CLAUDE_STANDARD_LIMITS, (1456, 819)),
+            # The docs table prints 1269x952; their reference code gives 1270 (same 1,564 tokens).
+            (2000, 1500, CLAUDE_STANDARD_LIMITS, (1270, 952)),
+            (1075, 1520, CLAUDE_STANDARD_LIMITS, (924, 1307)),
+            (1075, 1520, CLAUDE_HIGH_RES_LIMITS, (1075, 1520)),
+            (3840, 2160, CLAUDE_HIGH_RES_LIMITS, (2576, 1449)),
+        ],
+    )
+    def test_resized_size_matches_docs(self, w, h, limits, expected):
+        assert claude_resized_size(w, h, *limits) == expected
 
     def test_minimum_1_token(self):
-        tokens = estimate_anthropic_tokens(1, 1)
-        assert tokens == 1
+        assert estimate_anthropic_tokens(1, 1) == 1
+
+
+class TestClaudeImageLimits:
+    @pytest.mark.parametrize(
+        "model",
+        [
+            "claude-opus-4-7",
+            "claude-opus-4-8",
+            "claude-opus-5",
+            "claude-sonnet-5-5",
+            "claude-haiku-5-5",
+            "claude-fable-5-1",
+            "claude-mythos-preview",
+            "anthropic.claude-opus-4-7-v1:0",
+            "anthropic/claude-sonnet-5-20260301",
+        ],
+    )
+    def test_high_res_models(self, model):
+        assert claude_image_limits(model) == CLAUDE_HIGH_RES_LIMITS
+
+    @pytest.mark.parametrize(
+        "model",
+        [
+            "claude-opus-4-6",
+            "claude-sonnet-4-6",
+            "claude-haiku-4-5-20251001",
+            "claude-sonnet-4-5-20250929",
+            "claude-3-5-sonnet-20241022",
+            "claude-opus-4-20250514",
+            None,
+            "",
+        ],
+    )
+    def test_standard_models(self, model):
+        assert claude_image_limits(model) == CLAUDE_STANDARD_LIMITS
 
 
 class TestDetectTextDensity:

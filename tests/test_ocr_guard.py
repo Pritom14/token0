@@ -77,3 +77,39 @@ def test_classifier_layout():
     assert classify_prompt_detail("Where is the search box on this web page?") == "layout"
     assert classify_prompt_detail("Extract all text from this receipt") == "high"
     assert classify_messages([{"role": "user", "content": "classify this image"}]) == "low"
+
+
+def test_low_confidence_ocr_keeps_image(monkeypatch):
+    monkeypatch.setattr(
+        transformer,
+        "_ocr_extract",
+        lambda raw: {
+            "type": "text",
+            "content": "Invoice 42 total 1,299",
+            "detected": True,
+            "low_confidence_share": 0.2,
+        },
+    )
+    _, uri = make_text_image(800, 600, lines=25)
+    optimized, stats = optimize_messages(_msgs("Read this document", uri), "gpt-4o")
+    assert _has_image(optimized[0]["content"])
+    assert any("OCR unsure" in o for o in stats["optimizations"])
+
+
+def _box(x, y, text, w=60, h=14, conf=0.9):
+    return ([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], text, conf)
+
+
+def test_ocr_boxes_keep_table_rows():
+    # Boxes arrive out of order and with a little vertical jitter, as EasyOCR returns them.
+    boxes = [
+        _box(200, 31, "1,284.50"),
+        _box(10, 10, "Invoice"),
+        _box(10, 30, "INV-1001"),
+        _box(200, 9, "Amount"),
+        _box(10, 50, "INV-1002"),
+        _box(200, 51, "96.00"),
+    ]
+    assert transformer._boxes_to_lines(boxes) == (
+        "Invoice Amount\nINV-1001 1,284.50\nINV-1002 96.00"
+    )

@@ -10,7 +10,7 @@ Send images to LLMs through Token0. Same accuracy. Fraction of the cost.
 
 Every time you send an image to GPT-4.1, Claude, or Gemini, you're paying for **vision tokens** — and most of them are wasted.
 
-- A 4000x3000 photo costs **~1,590 tokens** on Claude. The model auto-downscales it to 1568px internally — you paid for pixels that got thrown away.
+- A 4000x3000 photo costs **1,564 tokens** on Claude Sonnet 4.6 and **4,740** on Claude 4.7 and later. The model downscales it internally either way, so you upload pixels that get thrown away, and a simple "what is this?" prompt on a newer model pays ~3x for detail it doesn't need.
 - A screenshot of a document costs **~765 tokens** on GPT-4.1 as an image. The same information extracted as text costs **~30 tokens**. That's a **25x markup** for the same answer.
 - A simple "classify this image" prompt on GPT-4.1 uses high-detail mode at **1,105 tokens**. Low-detail mode gives the same answer for **85 tokens** — 13x cheaper.
 - A 1280x720 image on GPT-4.1 creates 4 tiles (765 tokens). Resizing to tile boundaries gives 2 tiles (425 tokens) — 44% cheaper with zero quality loss.
@@ -37,6 +37,8 @@ Real requests through the LiteLLM Proxy integration, GPT-4.1 token formulas:
 - **No token savings on agent screenshots, by design:** UI/computer-use prompts keep the original dimensions so the coordinates the model returns still map onto the screen; only the upload gets smaller.
 - **OCR is verified, not assumed:** Token0 extracts the text, and if it would cost more than the (optimized) image, it sends the image instead. OCR runs on CPU via EasyOCR and adds seconds per image, so it suits batch/document pipelines more than latency-sensitive calls.
 
+- **OCR is lossy on UI screenshots.** On rendered settings pages it keeps 86-93% of words: dots in URLs and emails get dropped and times like `09:41` come back as `09.41`. If your prompt needs exact strings from a UI, send it as a layout/agent prompt (OCR is skipped) or turn OCR off. Dense tables fare better: 98-100% of numeric cells exact. See [OCR extraction quality](#ocr-extraction-quality).
+
 ## How It Works
 
 ```
@@ -49,7 +51,7 @@ Token0 applies **12 optimizations** automatically:
 
 ### Core Optimizations (Free Tier)
 
-**1. Smart Resize** — Auto-downscale images to the max resolution each model actually processes (Claude: 1568px, GPT-4.1: 2048px). Most apps send 4000px images that get silently downscaled by the provider.
+**1. Smart Resize** — Auto-downscale images to the exact size each model actually processes. Claude has two tiers: 1568px / 1,568 visual tokens on older models, 2576px / 4,784 on Claude 4.7 and later, with cost `ceil(w/28) x ceil(h/28)`; Token0 uses Anthropic's reference resize for the model you call. On high-res models, simple prompts get the standard-tier size (up to ~3x fewer tokens). GPT-4.1: 2048px.
 
 **2. OCR Routing** — Detect when an image is mostly text (screenshots, documents, invoices, receipts) and extract text via OCR instead. Text tokens cost 10-50x less than vision tokens. Uses a multi-signal heuristic (background uniformity, color variance, horizontal line structure, edge density) — validated at 91% accuracy on real-world images.
 
@@ -80,6 +82,34 @@ Token0 applies **12 optimizations** automatically:
 ## Benchmarks
 
 We benchmarked Token0 against **7 vision models** on **5 real-world images** (not synthetic — actual photos, receipts, documents, and screenshots) and **3 test videos**, plus cost projections using OpenAI and Anthropic's published token formulas.
+
+### OCR Extraction Quality
+
+The OCR route replaces an image with EasyOCR's text, so it is only safe when that text is right. `benchmarks/bench_ocr_quality.py` renders dense invoice tables and a settings page at WCAG contrast levels, with known ground truth, and runs them through Token0's real routing (claude-sonnet-4-6).
+
+**Dense tables** (25-40 rows x 8 columns, 11-15px)
+
+| Image | Word recall | Numeric cells exact | Rows on own line |
+|---|---|---|---|
+| 11px, 1x | 99% | 98% | 90% |
+| 13px, 1x | 99% | 99% | 93% |
+| 15px, 1x | 99% | 98% | 88% |
+| 11px, 2x (retina) | 100% | 100% | 98% |
+| 13px, 2x (retina) | 100% | 100% | 100% |
+
+Amounts, dates and invoice ids come through exactly; the misses are short cells (a quantity like `31`) that EasyOCR doesn't detect at all, which shifts that row's columns. OCR output keeps one line per table row (before 0.5.0 the whole table came out as one line).
+
+**Low-contrast UI** (settings page, 24 text items)
+
+| Contrast | Light theme: word recall | Dark theme: word recall | Token0 route |
+|---|---|---|---|
+| ~7:1 | 88% | 91% | OCR |
+| 4.5:1 | 88% | 91% | OCR |
+| 3:1 | 89% | 93% | OCR |
+| ~2:1 | 86% | 93% | OCR |
+| ~1.6:1 | 79% | 81% | light: image (OCR unsure), dark: OCR |
+
+Contrast matters less than expected until it drops below ~2:1. The bigger problem is punctuation: `billing@acme.example` comes back without the dot at every contrast level. When more than 10% of the detected text is low-confidence, Token0 now sends the image instead. These are synthetic renders, so treat them as a floor for clean UIs, not a promise for real screenshots.
 
 ### Real-World Image Test Suite
 
@@ -176,7 +206,7 @@ Using OpenAI's published tile formula (512px tiles, 170 tokens/tile) and GPT-4.1
 
 ### Anthropic Video Extrapolation (ballpark)
 
-Using Anthropic's pixel formula (tokens ≈ width × height / 750) and Claude Sonnet pricing ($3/1M tokens):
+Using Anthropic's older pixel formula (tokens ≈ width × height / 750; current models count `ceil(w/28) x ceil(h/28)` visual tokens) and Claude Sonnet pricing ($3/1M tokens):
 
 | Scenario | Naive | Token0 | Savings |
 |---|---|---|---|
@@ -259,7 +289,7 @@ UI agents that send both a screenshot and an accessibility tree can route to the
 | OpenAI GPT-4o | 1,530 | ~80 | **89.6%** | **~$10,282** |
 | Anthropic Claude | 1,280 | ~80 | **87.6%** | **~$10,089** |
 
-> Tree token counts are text-based and provider-agnostic (~4 chars/token). Screenshot tokens use OpenAI tile formula (85 + 170×tiles) and Anthropic pixel formula (w×h/750). Canvas/iframe nodes trigger automatic screenshot fallback — no configuration needed.
+> Tree token counts are text-based and provider-agnostic (~4 chars/token). Screenshot tokens use OpenAI tile formula (85 + 170×tiles) and Anthropic's older pixel formula (w×h/750). Canvas/iframe nodes trigger automatic screenshot fallback — no configuration needed.
 
 Run benchmarks:
 ```bash

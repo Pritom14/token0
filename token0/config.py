@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     token0_master_key: str = "change-me-in-production"
 
     # Optimization defaults
-    max_image_dimension: int = 1568  # Claude's max before auto-downscale
+    max_image_dimension: int = 1568  # default cap for providers without their own rule
     jpeg_quality: int = 85
     text_density_threshold: float = 0.52  # Above this → OCR route instead of vision
 
