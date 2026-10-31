@@ -1,5 +1,7 @@
 """OCR is only used when it is actually cheaper, and never for layout/agent prompts."""
 
+import pytest
+
 from tests.conftest import make_text_image
 from token0.optimization import transformer
 from token0.optimization.message_optimizer import optimize_messages
@@ -113,3 +115,40 @@ def test_ocr_boxes_keep_table_rows():
     assert transformer._boxes_to_lines(boxes) == (
         "Invoice Amount\nINV-1001 1,284.50\nINV-1002 96.00"
     )
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Billing email billing@acme example",  # dot became a space
+        "https://api acme example/hooks",
+        "https Ilapi acme example/hooks/payments",  # "://" misread
+        "Billing email\nbillingwacme example",  # "@" misread as "w"
+        "Email: billing @techsolutions_com Attn: John",  # dot became "_"
+        "Contact billing @techsclutions.com",
+        "E-Mai I : grosseschejdegg@b luewin. ch",
+        "visit www acme com",
+        "Or visit wwwexample com/help",  # dot dropped, words merged
+    ],
+)
+def test_broken_link_detects_mangled_links(text):
+    assert transformer.broken_link(text)
+
+
+def test_broken_link_allows_intact_links():
+    text = (
+        "Billing email\nbilling@acme.example\nhttps://api.acme.example/hooks www.acme.com "
+        "http://localhost:8000/x follow @bickov\nShown on invoices and in email footers\n"
+        "Email: ops@acme.co.in"
+    )
+    assert transformer.broken_link(text) is None
+
+
+def test_ocr_with_broken_link_keeps_image(monkeypatch):
+    monkeypatch.setattr(
+        transformer, "_ocr_extract", _fake_ocr("Webhook endpoint https://api acme example/hooks")
+    )
+    _, uri = make_text_image(800, 600, lines=25)
+    optimized, stats = optimize_messages(_msgs("Read this document", uri), "gpt-4o")
+    assert _has_image(optimized[0]["content"])
+    assert any("looks broken" in o for o in stats["optimizations"])

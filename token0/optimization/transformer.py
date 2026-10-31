@@ -3,6 +3,7 @@
 import base64
 import io
 import math
+import re
 
 import easyocr
 from PIL import Image
@@ -105,6 +106,10 @@ def resolve_ocr(
     if low_share > OCR_MAX_LOW_CONFIDENCE_SHARE:
         fallback.reasons.append(f"OCR unsure on {low_share:.0%} of text — sent image instead")
         return fallback, None
+    link = broken_link(text)
+    if link:
+        fallback.reasons.append(f"OCR link {link!r} looks broken — sent image instead")
+        return fallback, None
     ocr_tokens = estimate_text_tokens(text)
     if ocr_tokens >= fallback.estimated_tokens_after:
         image_tokens = fallback.estimated_tokens_after
@@ -115,6 +120,47 @@ def resolve_ocr(
     plan.estimated_tokens_after = ocr_tokens
     plan.reasons.append(f"OCR text ~{ocr_tokens} tokens (verified)")
     return plan, result
+
+
+# OCR mangles links and is confident while doing it: dots vanish or become spaces
+# or underscores, "@" becomes "w", "://" becomes " Il". A link that lost a dot
+# still looks usable to the model, so link-shaped text that isn't a well-formed
+# URL or email means the image goes instead.
+_DOMAIN = r"[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+"
+_VALID_URL = re.compile(rf"(?i)(?:https?|ftp)://(?:localhost|{_DOMAIN})(?![\w-])")
+_VALID_EMAIL = re.compile(rf"[\w.%+-]+@{_DOMAIN}(?![\w-])")
+_SCHEME = re.compile(r"(?i)\b(?:https?|ftp)(?=[:\s/|Il]|$)")
+_AT = re.compile(r"(\s?)@\s?(\S*)")
+_BARE_WWW = re.compile(r"(?i)\bwww(?!\.\w)")
+_EMAIL_LABEL = re.compile(r"(?i)\be-?mail\s*(?::\s*(.*))?$")
+
+
+def broken_link(text: str) -> str | None:
+    """Return the first URL/email fragment that OCR appears to have mangled, if any."""
+    valid_emails = [m.span() for m in _VALID_EMAIL.finditer(text)]
+    for m in _SCHEME.finditer(text):
+        if not _VALID_URL.match(text, m.start()):
+            return text[m.start() : m.start() + 30].split("\n")[0]
+    for m in _AT.finditer(text):
+        if any(start <= m.start() < end for start, end in valid_emails):
+            continue
+        spaced, domain = m.group(1), m.group(2)
+        # "@name" alone is a social handle; anything domain-shaped is a broken email.
+        if not spaced or "." in domain or "_" in domain:
+            return text[max(0, m.start() - 20) : m.end()].split("\n")[-1].strip()
+    m = _BARE_WWW.search(text)
+    if m:
+        return m.group(0)
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        label = _EMAIL_LABEL.search(line.strip())
+        if label:
+            value = label.group(1) if label.group(1) is not None else ""
+            if not value and i + 1 < len(lines):
+                value = lines[i + 1]
+            if value and not _VALID_EMAIL.search(value):
+                return value.strip()
+    return None
 
 
 # EasyOCR boxes below this confidence are likely misreads. If too many boxes in

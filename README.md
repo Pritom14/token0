@@ -37,7 +37,7 @@ Real requests through the LiteLLM Proxy integration, GPT-4.1 token formulas:
 - **No token savings on agent screenshots, by design:** UI/computer-use prompts keep the original dimensions so the coordinates the model returns still map onto the screen; only the upload gets smaller.
 - **OCR is verified, not assumed:** Token0 extracts the text, and if it would cost more than the (optimized) image, it sends the image instead. OCR runs on CPU via EasyOCR and adds seconds per image, so it suits batch/document pipelines more than latency-sensitive calls.
 
-- **OCR is lossy on UI screenshots.** On rendered settings pages it keeps 86-93% of words: dots in URLs and emails get dropped and times like `09:41` come back as `09.41`. If your prompt needs exact strings from a UI, send it as a layout/agent prompt (OCR is skipped) or turn OCR off. Dense tables fare better: 98-100% of numeric cells exact. See [OCR extraction quality](#ocr-extraction-quality).
+- **OCR is lossy on UI screenshots, and worst on links.** On rendered settings pages it keeps 86-93% of words, and in our tests EasyOCR never read a URL correctly, even at 18px on a 2x screen (`https://shop.example.com/orders` came back as `https:Ilshop example comlorders`). A link missing a dot still looks usable to a model, so since 0.5.1 any image whose OCR text has a mangled URL or email is sent as the image. Times like `09:41` can still come back as `09.41`; if your prompt needs exact strings from a UI, send it as a layout/agent prompt (OCR is skipped) or turn OCR off. Dense tables fare better: 98-100% of numeric cells exact. See [OCR extraction quality](#ocr-extraction-quality).
 
 ## How It Works
 
@@ -103,13 +103,13 @@ Amounts, dates and invoice ids come through exactly; the misses are short cells 
 
 | Contrast | Light theme: word recall | Dark theme: word recall | Token0 route |
 |---|---|---|---|
-| ~7:1 | 88% | 91% | OCR |
-| 4.5:1 | 88% | 91% | OCR |
-| 3:1 | 89% | 93% | OCR |
-| ~2:1 | 86% | 93% | OCR |
-| ~1.6:1 | 79% | 81% | light: image (OCR unsure), dark: OCR |
+| ~7:1 | 88% | 91% | image |
+| 4.5:1 | 88% | 91% | image |
+| 3:1 | 89% | 93% | image |
+| ~2:1 | 86% | 93% | image |
+| ~1.6:1 | 79% | 81% | image |
 
-Contrast matters less than expected until it drops below ~2:1. The bigger problem is punctuation: `billing@acme.example` comes back without the dot at every contrast level. When more than 10% of the detected text is low-confidence, Token0 now sends the image instead. These are synthetic renders, so treat them as a floor for clean UIs, not a promise for real screenshots.
+Contrast matters less than expected until it drops below ~2:1. The bigger problem is links: at every contrast level `billing@acme.example` comes back as `billingwacme example` or `billing@acme example`, and the webhook URL loses its `://` and dots. OCR is confident about these misreads, so a confidence check alone doesn't catch them. Since 0.5.1 Token0 checks the OCR text for link-shaped fragments that aren't well-formed (a bare `https`, an `@` followed by a dotless or underscored domain, an email label with no valid address, `www` without a dot) and sends the image instead, which is why every UI image above now goes as an image. It also falls back when more than 10% of the detected text is low-confidence. The same check sends the real invoice and receipt from the test suite as images (their email addresses came back as `billing @techsolutions_com` and `grosseschejdegg@b luewin. ch`), so the OCR-route savings measured for those two in the tables below are from before 0.5.1. These are synthetic renders, so treat them as a floor for clean UIs, not a promise for real screenshots.
 
 ### Real-World Image Test Suite
 
