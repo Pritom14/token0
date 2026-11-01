@@ -101,6 +101,7 @@ def resolve_ocr(
     fallback = replan()
     if not result.get("detected"):
         fallback.reasons.append("OCR found no text — sent image instead")
+        fallback.ocr_found_no_text = True
         return fallback, None
     low_share = result.get("low_confidence_share", 0.0)
     if low_share > OCR_MAX_LOW_CONFIDENCE_SHARE:

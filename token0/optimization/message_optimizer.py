@@ -3,6 +3,8 @@
 Used by both litellm_hook.py and langchain_callback.py.
 """
 
+import base64
+import io
 import logging
 
 from token0.optimization.analyzer import analyze_image
@@ -89,24 +91,9 @@ def optimize_messages(
             try:
                 analysis, raw_bytes, pil_image = analyze_image(url)
 
-                # Saliency crop — trim to region the prompt asks about
-                saliency = detect_roi(prompt_text, pil_image)
-                if saliency.cropped:
-                    pil_image = apply_saliency_crop(pil_image, saliency)
-                    # Re-encode cropped image to bytes for downstream steps
-                    import io as _io
-
-                    fmt = "JPEG" if analysis.format == "jpg" else analysis.format.upper()
-                    buf = _io.BytesIO()
-                    pil_image.save(buf, format=fmt)
-                    raw_bytes = buf.getvalue()
-                    kw, pct = saliency.matched_keyword, saliency.savings_pct
-                    optimizations.append(f"saliency crop ({kw!r}: {pct:.0%} pixels removed)")
-                    logger.debug("token0: saliency crop on %r, savings=%.0f%%", kw, pct * 100)
-
-                def _plan(allow_ocr: bool = True):
+                def _plan(an, allow_ocr: bool = True):
                     return plan_optimization(
-                        analysis,
+                        an,
                         model,
                         detail_override=detail_override,
                         prompt_detail=prompt_detail,
@@ -114,9 +101,37 @@ def optimize_messages(
                         allow_ocr=allow_ocr,
                     )
 
-                plan, ocr_result = resolve_ocr(_plan(), raw_bytes, lambda: _plan(allow_ocr=False))
+                def _resolve(an, raw):
+                    return resolve_ocr(_plan(an), raw, lambda: _plan(an, allow_ocr=False))
 
-                total_before += plan.estimated_tokens_before
+                # Savings are counted against the image as it arrived, crop or no crop.
+                tokens_before = _plan(analysis, allow_ocr=False).estimated_tokens_before
+
+                # Saliency crop — trim to region the prompt asks about
+                saliency = detect_roi(prompt_text, pil_image)
+                if saliency.cropped:
+                    # Re-analyze the crop, so the plan (resize target, text density, tokens)
+                    # sees its real size and shape rather than the whole image's.
+                    fmt = "JPEG" if analysis.format in ("jpg", "jpeg") else analysis.format.upper()
+                    buf = io.BytesIO()
+                    apply_saliency_crop(pil_image, saliency).save(buf, format=fmt)
+                    crop_uri = f"data:image/{fmt.lower()};base64,"
+                    crop_uri += base64.b64encode(buf.getvalue()).decode()
+                    crop_analysis, crop_raw, crop_pil = analyze_image(crop_uri)
+                    plan, ocr_result = _resolve(crop_analysis, crop_raw)
+                    kw, pct = saliency.matched_keyword, saliency.savings_pct
+                    if plan.ocr_found_no_text:
+                        # The crop missed the text the prompt is about: use the whole image.
+                        optimizations.append(f"saliency crop ({kw!r}) held no text — kept whole")
+                        plan, ocr_result = _resolve(analysis, raw_bytes)
+                    else:
+                        analysis, raw_bytes, pil_image = crop_analysis, crop_raw, crop_pil
+                        optimizations.append(f"saliency crop ({kw!r}: {pct:.0%} pixels removed)")
+                        logger.debug("token0: saliency crop on %r, savings=%.0f%%", kw, pct * 100)
+                else:
+                    plan, ocr_result = _resolve(analysis, raw_bytes)
+
+                total_before += tokens_before
                 total_after += plan.estimated_tokens_after
                 optimizations.extend(plan.reasons)
 

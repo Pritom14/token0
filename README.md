@@ -73,7 +73,7 @@ Token0 applies **12 optimizations** automatically:
 
 **10. Video Optimization** — Automatically extract keyframes from video at 1fps, deduplicate similar consecutive frames using QJL perceptual hashing, detect scene changes via pixel-level diff, and run each keyframe through the full image optimization pipeline. A 60-second video at 30fps (1,800 frames) reduces to ~10 keyframes before being sent to the LLM. **13-45% savings on local models; ~83% projected savings on GPT-4.1.** Optional CLIP-based query-frame scoring (Layer 2) ranks frames by relevance to the user's prompt.
 
-**11. Saliency-Based ROI Cropping** — Detects which region of an image the prompt is asking about and crops to that region before sending to the LLM. "What's the total on this invoice?" → crops to the bottom 40% of the image. "Read the header" → crops to the top 25%. Rule-based spatial keyword matching (zero ML deps). Delivers ~60% additional pixel reduction on document and form images before any other optimization runs.
+**11. Saliency-Based ROI Cropping** — Detects which region of an image the prompt is asking about and crops to that region before sending to the LLM. "What's the total on this invoice?" → crops to the bottom 40% of the *content* (where the writing ends, not the blank paper below it). "Read the header" → crops to the top 30%. Rule-based spatial keyword matching (zero ML deps). A crop that would keep almost none of the image's content is skipped, and if OCR finds no text in a crop, the whole image is used instead. Delivers ~60% additional pixel reduction on document and form images before any other optimization runs.
 
 **12. Accessibility Tree Routing** — UI automation agents often have both a screenshot and an accessibility tree (AXUIElement, Playwright, Chrome DevTools). Token0 accepts both and routes to the cheaper representation automatically. If the tree is complete (no canvas/iframe/opaque elements), the screenshot is dropped and the tree is serialized as compact text — **93-97% token savings** vs a 1080p screenshot. If the tree has opaque nodes (a Figma canvas, a video element), Token0 keeps the screenshot. Supports Playwright/CDP format, macOS AXUIElement format, and pre-serialized strings.
 
@@ -602,7 +602,7 @@ response = client.chat.completions.create(
     }],
     response_model=MyModel,
 )
-# Invoice image cropped to bottom 40% (saliency) + OCR routed — ~90% token savings
+# Invoice image cropped to the bottom of its content (saliency) + OCR routed — ~90% token savings
 ```
 
 Works with any instructor-supported provider — OpenAI, Anthropic, Google, Ollama.

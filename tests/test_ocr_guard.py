@@ -152,3 +152,57 @@ def test_ocr_with_broken_link_keeps_image(monkeypatch):
     optimized, stats = optimize_messages(_msgs("Read this document", uri), "gpt-4o")
     assert _has_image(optimized[0]["content"])
     assert any("looks broken" in o for o in stats["optimizations"])
+
+
+def _short_invoice_uri():
+    import base64
+    import io
+
+    from PIL import Image, ImageDraw
+
+    img = Image.new("RGB", (1700, 2200), "white")
+    d = ImageDraw.Draw(img)
+    for i in range(7):
+        y = 200 + i * 90
+        d.rectangle([140, y, 600, y + 30], fill="black")
+        d.rectangle([1100, y, 1400, y + 30], fill="black")
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+def _sent_image(parts):
+    import base64
+    import io
+
+    from PIL import Image
+
+    url = next(p["image_url"]["url"] for p in parts if p.get("type") == "image_url")
+    return Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1])))
+
+
+def test_saliency_crop_keeps_its_shape_and_content(monkeypatch):
+    # OCR text costlier than the image, so the (cropped) image is sent. It must keep the
+    # crop's proportions, not be stretched to the whole page's, and hold the text.
+    monkeypatch.setattr(transformer, "_ocr_extract", _fake_ocr("word " * 2000))
+    optimized, stats = optimize_messages(
+        _msgs("What is the total due on this invoice?", _short_invoice_uri()), "gpt-4o"
+    )
+    assert any(o.startswith("saliency crop ('total'") for o in stats["optimizations"])
+    img = _sent_image(optimized[0]["content"])
+    assert img.width / img.height > 1.5  # a wide strip of the page, not a 1700:2200 page
+    assert img.convert("L").getextrema()[0] < 80  # dark text survived
+    assert stats["tokens_before"] == 765  # counted against the image as it arrived
+
+
+def test_saliency_crop_with_no_text_falls_back_to_whole_image(monkeypatch):
+    # A dense-text crop goes to OCR; if OCR reads nothing there, the crop missed what the
+    # prompt is about, so the whole image is sent rather than the crop.
+    monkeypatch.setattr(
+        transformer, "_ocr_extract", _fake_ocr("[No text detected in image]", False)
+    )
+    _, uri = make_text_image(800, 1000, lines=40)
+    optimized, stats = optimize_messages(_msgs("What is the total due?", uri), "gpt-4o")
+    assert any("held no text — kept whole" in o for o in stats["optimizations"])
+    img = _sent_image(optimized[0]["content"])
+    assert abs(img.width / img.height - 800 / 1000) < 0.02  # the whole page
