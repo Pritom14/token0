@@ -25,6 +25,7 @@ class OptimizationPlan:
     reasons: list[str] | None = None
     estimated_tokens_before: int = 0
     estimated_tokens_after: int = 0
+    ocr_found_no_text: bool = False  # set by resolve_ocr when the OCR route read nothing
 
     def __post_init__(self):
         if self.reasons is None:
